@@ -3,7 +3,6 @@ import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -30,8 +29,10 @@ import {
   Subheading,
 } from '@/components/StyledText';
 import { AppIcon } from '@/components/ui/AppIcon';
-import type { HomeSummary } from '@/features/vocabulary/types';
 import { getHomeSummary } from '@/features/vocabulary/services/vocabularyService';
+import type { HomeSummary } from '@/features/vocabulary/types';
+
+const RECENTLY_ADDED_LIMIT = 3;
 
 const emptySummary: HomeSummary = {
   totalWords: 0,
@@ -72,12 +73,11 @@ const Home = () => {
       ? '1 card is waiting for you'
       : `${summary.dueReviewCount} cards are waiting for you`;
 
+  const recentItems = summary.recentlyAdded.slice(0, RECENTLY_ADDED_LIMIT);
+
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView
-        contentContainerStyle={styles.container}
-        showsVerticalScrollIndicator={false}
-      >
+      <View style={styles.container}>
         <View style={[commonStyles.row, commonStyles.spaceBetween, styles.header]}>
           <View>
             <Heading>My Arabic</Heading>
@@ -167,14 +167,14 @@ const Home = () => {
             </View>
           ) : null}
 
-          {!isLoading && summary.recentlyAdded.length === 0 ? (
+          {!isLoading && !recentItems.length ? (
             <View style={styles.emptyRecent}>
               <BodyText>No words yet. Add your first vocabulary card.</BodyText>
             </View>
           ) : null}
 
           {!isLoading
-            ? summary.recentlyAdded.map((item, index) => (
+            ? recentItems.map((item, index) => (
                 <Pressable
                   key={item.id}
                   onPress={() => router.push(`/vocabulary/${item.id}`)}
@@ -182,14 +182,10 @@ const Home = () => {
                     styles.wordRow,
                     commonStyles.row,
                     commonStyles.alignCenter,
-                    index !== summary.recentlyAdded.length - 1 && styles.wordRowBorder,
+                    index !== recentItems.length - 1 && styles.wordRowBorder,
                     pressed && styles.wordRowPressed,
                   ]}
                 >
-                  <View style={[commonStyles.centered, styles.wordIcon]}>
-                    <Text style={styles.wordIconText}>{index + 1}</Text>
-                  </View>
-
                   <View style={styles.entryTextRow}>
                     <Text style={styles.meaning} numberOfLines={1}>
                       {item.meaning}
@@ -222,7 +218,7 @@ const Home = () => {
           </View>
           <Text style={styles.addButtonText}>Add Vocabulary</Text>
         </Pressable>
-      </ScrollView>
+      </View>
     </SafeAreaView>
   );
 };
@@ -236,7 +232,7 @@ const styles = StyleSheet.create({
   },
 
   container: {
-    flexGrow: 1,
+    flex: 1,
     paddingHorizontal: SPACING.lg,
     paddingTop: SPACING.lg,
     paddingBottom: SPACING.section,

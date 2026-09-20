@@ -166,10 +166,20 @@ export function ReviewSessionScreen() {
             ) : (
               <View style={styles.answerBlock}>
                 <Text style={styles.meaning}>{currentCard.vocabulary.meaning}</Text>
-                {currentCard.vocabulary.exampleSentence ? (
-                  <Text style={styles.example}>
-                    {currentCard.vocabulary.exampleSentence}
-                  </Text>
+                {currentCard.vocabulary.examples.length > 0 ? (
+                  <View style={styles.examplesBlock}>
+                    {currentCard.vocabulary.examples.map((example, index) => (
+                      <View
+                        key={`${example.sentence}-${index}`}
+                        style={styles.exampleItem}
+                      >
+                        <Text style={styles.example}>{example.sentence}</Text>
+                        {example.meaning ? (
+                          <Text style={styles.exampleMeaning}>{example.meaning}</Text>
+                        ) : null}
+                      </View>
+                    ))}
+                  </View>
                 ) : null}
                 {currentCard.vocabulary.description ? (
                   <Text style={styles.description}>
@@ -256,7 +266,19 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.xl,
     color: COLORS.text,
     textAlign: 'center',
+  },
+  examplesBlock: {
+    alignSelf: 'stretch',
+    gap: SPACING.sm,
     marginBottom: SPACING.sm,
+  },
+  exampleItem: {
+    gap: SPACING.xs,
+  },
+  exampleMeaning: {
+    fontSize: FONT_SIZES.md,
+    color: COLORS.textMuted,
+    textAlign: 'center',
   },
   description: {
     fontSize: FONT_SIZES.md,

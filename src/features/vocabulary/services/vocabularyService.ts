@@ -7,12 +7,8 @@ import {
   searchVocabulary,
   updateVocabulary,
 } from '@/features/vocabulary/repositories/vocabularyRepository';
-import {
-  vocabularySchema,
-  type VocabularyFormValues,
-  type VocabularyValidatedInput,
-} from '@/features/vocabulary/schemas/vocabularySchema';
-import type { HomeSummary, Vocabulary } from '@/features/vocabulary/types';
+import type { VocabularyValidatedInput } from '@/features/vocabulary/schemas/vocabularySchema';
+import type { HomeSummary, Vocabulary, VocabularyInput } from '@/features/vocabulary/types';
 import {
   countDueReviews,
   insertInitialReviewState,
@@ -20,13 +16,14 @@ import {
 import { createId } from '@/utils/createId';
 import { toIsoNow } from '@/utils/dates';
 
-function parseVocabularyInput(values: VocabularyFormValues): VocabularyValidatedInput {
-  const parsed = vocabularySchema.safeParse(values);
-  if (!parsed.success) {
-    const firstIssue = parsed.error.issues[0];
-    throw new Error(firstIssue?.message ?? 'Invalid vocabulary input');
-  }
-  return parsed.data;
+function toVocabularyInput(values: VocabularyValidatedInput): VocabularyInput {
+  return {
+    arabicWord: values.arabicWord,
+    meaning: values.meaning,
+    examples: values.examples,
+    description: values.description,
+    imageUri: values.imageUri,
+  };
 }
 
 export async function getHomeSummary(): Promise<HomeSummary> {
@@ -52,8 +49,8 @@ export async function getVocabulary(id: string): Promise<Vocabulary | null> {
   return findVocabularyById(id);
 }
 
-export async function createVocabulary(values: VocabularyFormValues): Promise<Vocabulary> {
-  const input = parseVocabularyInput(values);
+export async function createVocabulary(values: VocabularyValidatedInput): Promise<Vocabulary> {
+  const input = toVocabularyInput(values);
   const id = createId();
   const nowIso = toIsoNow();
 
@@ -69,9 +66,9 @@ export async function createVocabulary(values: VocabularyFormValues): Promise<Vo
 
 export async function saveVocabulary(
   id: string,
-  values: VocabularyFormValues,
+  values: VocabularyValidatedInput,
 ): Promise<Vocabulary> {
-  const input = parseVocabularyInput(values);
+  const input = toVocabularyInput(values);
   const updatedAt = toIsoNow();
   return updateVocabulary(id, input, updatedAt);
 }

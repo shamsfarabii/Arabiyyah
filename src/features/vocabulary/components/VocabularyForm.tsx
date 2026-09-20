@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, useFieldArray, useForm } from 'react-hook-form';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AppIcon } from '@/components/ui/AppIcon';
@@ -18,6 +18,7 @@ import {
 import {
   vocabularySchema,
   type VocabularyFormValues,
+  type VocabularyValidatedInput,
 } from '@/features/vocabulary/schemas/vocabularySchema';
 import { createShadow } from '@/helpers/styleHelpers';
 import { commonStyles } from '@/styles/commonStyles';
@@ -25,14 +26,14 @@ import { commonStyles } from '@/styles/commonStyles';
 type VocabularyFormProps = {
   initialValues?: Partial<VocabularyFormValues>;
   submitLabel: string;
-  onSubmit: (values: VocabularyFormValues) => Promise<void>;
+  onSubmit: (values: VocabularyValidatedInput) => Promise<void>;
   onDelete?: () => void;
 };
 
 const emptyDefaults: VocabularyFormValues = {
   arabicWord: '',
   meaning: '',
-  exampleSentence: '',
+  examples: [],
   description: '',
   imageUri: '',
 };
@@ -51,12 +52,17 @@ export function VocabularyForm({
     setValue,
     watch,
     formState: { errors, isSubmitting },
-  } = useForm<VocabularyFormValues>({
+  } = useForm<VocabularyFormValues, unknown, VocabularyValidatedInput>({
     resolver: zodResolver(vocabularySchema),
     defaultValues: {
       ...emptyDefaults,
       ...initialValues,
     },
+  });
+
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: 'examples',
   });
 
   const imageUri = watch('imageUri');
@@ -134,24 +140,72 @@ export function VocabularyForm({
       </View>
 
       <View style={styles.section}>
+        <Text style={styles.sectionLabel}>Examples</Text>
+        <Text style={styles.sectionHint}>
+          Optional — add one or more sentences that use this word.
+        </Text>
+        {fields.map((field, index) => (
+          <View key={field.id} style={styles.sectionCard}>
+            <View style={styles.exampleHeader}>
+              <Text style={styles.exampleTitle}>Example {index + 1}</Text>
+              <Pressable
+                onPress={() => remove(index)}
+                accessibilityRole="button"
+                accessibilityLabel={`Remove example ${index + 1}`}
+                style={({ pressed }) => [pressed && styles.removeExamplePressed]}
+              >
+                <Text style={styles.removeExampleText}>Remove</Text>
+              </Pressable>
+            </View>
+
+            <Controller
+              control={control}
+              name={`examples.${index}.sentence`}
+              render={({ field: { onChange, onBlur, value } }) => (
+                <TextField
+                  label="Sentence"
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  errorMessage={errors.examples?.[index]?.sentence?.message}
+                  multiline
+                  textAlign="right"
+                  style={styles.multilineInput}
+                />
+              )}
+            />
+
+            <Controller
+              control={control}
+              name={`examples.${index}.meaning`}
+              render={({ field: { onChange, onBlur, value } }) => (
+                <TextField
+                  label="Meaning"
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  errorMessage={errors.examples?.[index]?.meaning?.message}
+                  multiline
+                  style={[styles.multilineInput, styles.lastFieldInCard]}
+                />
+              )}
+            />
+          </View>
+        ))}
+
+        <PrimaryButton
+          label="Add example"
+          variant="secondary"
+          onPress={() => append({ sentence: '', meaning: '' })}
+          trailing={
+            <AppIcon name="plus" size={ICON_SIZES.md} color={COLORS.primary} weight="semibold" />
+          }
+        />
+      </View>
+
+      <View style={styles.section}>
         <Text style={styles.sectionLabel}>More context</Text>
         <View style={styles.sectionCard}>
-          <Controller
-            control={control}
-            name="exampleSentence"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <TextField
-                label="Example Sentence"
-                value={value ?? ''}
-                onChangeText={onChange}
-                onBlur={onBlur}
-                multiline
-                textAlign="right"
-                style={styles.multilineInput}
-              />
-            )}
-          />
-
           <Controller
             control={control}
             name="description"
@@ -272,6 +326,26 @@ const styles = StyleSheet.create({
   },
   lastFieldInCard: {
     marginBottom: SPACING.sm,
+  },
+  exampleHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: SPACING.xs,
+    paddingHorizontal: SPACING.xs,
+  },
+  exampleTitle: {
+    fontSize: FONT_SIZES.sm,
+    fontWeight: FONT_WEIGHTS.semibold,
+    color: COLORS.textMuted,
+  },
+  removeExampleText: {
+    fontSize: FONT_SIZES.sm,
+    fontWeight: FONT_WEIGHTS.semibold,
+    color: COLORS.textMuted,
+  },
+  removeExamplePressed: {
+    opacity: 0.7,
   },
   imagePicker: {
     borderRadius: BORDER_RADIUS.xxl,

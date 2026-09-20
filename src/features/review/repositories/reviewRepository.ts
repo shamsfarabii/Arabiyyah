@@ -1,4 +1,5 @@
 import { getDatabase } from '@/db/database';
+import { enrichVocabularyWithExamples } from '@/features/vocabulary/repositories/vocabularyRepository';
 import type { ReviewCard, ReviewState } from '@/features/review/types';
 import type { Vocabulary } from '@/features/vocabulary/types';
 
@@ -14,7 +15,6 @@ type DueReviewRow = ReviewRow & {
   id: string;
   arabic_word: string;
   meaning: string;
-  example_sentence: string | null;
   description: string | null;
   image_uri: string | null;
   created_at: string;
@@ -36,7 +36,7 @@ function mapDueReviewRow(row: DueReviewRow): ReviewCard {
     id: row.id,
     arabicWord: row.arabic_word,
     meaning: row.meaning,
-    exampleSentence: row.example_sentence ?? undefined,
+    examples: [],
     description: row.description ?? undefined,
     imageUri: row.image_uri ?? undefined,
     createdAt: row.created_at,
@@ -86,7 +86,6 @@ export async function findDueReviewCards(nowIso: string): Promise<ReviewCard[]> 
        v.id,
        v.arabic_word,
        v.meaning,
-       v.example_sentence,
        v.description,
        v.image_uri,
        v.created_at,
@@ -103,7 +102,15 @@ export async function findDueReviewCards(nowIso: string): Promise<ReviewCard[]> 
     nowIso,
   );
 
-  return rows.map(mapDueReviewRow);
+  const cards = rows.map(mapDueReviewRow);
+  const enrichedVocabulary = await enrichVocabularyWithExamples(
+    cards.map((card) => card.vocabulary),
+  );
+
+  return cards.map((card, index) => ({
+    ...card,
+    vocabulary: enrichedVocabulary[index] ?? card.vocabulary,
+  }));
 }
 
 export async function updateReviewState(state: ReviewState): Promise<void> {

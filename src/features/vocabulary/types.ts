@@ -1,8 +1,13 @@
+export type VocabularyExample = {
+  sentence: string;
+  meaning?: string;
+};
+
 export type Vocabulary = {
   id: string;
   arabicWord: string;
   meaning: string;
-  exampleSentence?: string;
+  examples: VocabularyExample[];
   description?: string;
   imageUri?: string;
   createdAt: string;
@@ -12,7 +17,7 @@ export type Vocabulary = {
 export type VocabularyInput = {
   arabicWord: string;
   meaning: string;
-  exampleSentence?: string;
+  examples: VocabularyExample[];
   description?: string;
   imageUri?: string;
 };

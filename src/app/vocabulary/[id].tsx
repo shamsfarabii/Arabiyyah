@@ -1,20 +1,16 @@
-import { router, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Text, View } from 'react-native';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useCallback, useState } from 'react';
+import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { ScreenScaffold } from '@/components/ui/ScreenScaffold';
-import { COLORS, FONT_SIZES } from '@/constants/theme';
-import { VocabularyForm } from '@/features/vocabulary/components/VocabularyForm';
-import {
-  getVocabulary,
-  removeVocabulary,
-  saveVocabulary,
-} from '@/features/vocabulary/services/vocabularyService';
+import { COLORS, FONT_SIZES, FONT_WEIGHTS } from '@/constants/theme';
+import { VocabularyDetailScreen } from '@/features/vocabulary/screens/VocabularyDetailScreen';
+import { getVocabulary } from '@/features/vocabulary/services/vocabularyService';
 import type { Vocabulary } from '@/features/vocabulary/types';
 import { commonStyles } from '@/styles/commonStyles';
 
-export default function EditVocabularyRoute() {
+export default function VocabularyDetailRoute() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const vocabularyId = typeof id === 'string' ? id : '';
 
@@ -49,67 +45,51 @@ export default function EditVocabularyRoute() {
     }
   }, [vocabularyId]);
 
-  useEffect(() => {
-    void loadVocabulary();
-  }, [loadVocabulary]);
+  useFocusEffect(
+    useCallback(() => {
+      void loadVocabulary();
+    }, [loadVocabulary]),
+  );
 
-  const handleDelete = () => {
-    Alert.alert(
-      'Delete vocabulary',
-      'This card and its review history will be removed.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => {
-            void (async () => {
-              try {
-                await removeVocabulary(vocabularyId);
-                router.replace('/vocabulary');
-              } catch (error: unknown) {
-                const message =
-                  error instanceof Error ? error.message : 'Could not delete vocabulary.';
-                Alert.alert('Delete failed', message);
-              }
-            })();
-          },
-        },
-      ],
-    );
-  };
-
-  return (
-    <ScreenScaffold>
-      <ScreenHeader title="Edit Vocabulary" onBack={() => router.back()} />
-
-      {isLoading ? (
-        <View style={[commonStyles.centered, { minHeight: 200 }]}>
+  if (isLoading) {
+    return (
+      <ScreenScaffold scroll={false}>
+        <ScreenHeader title="Vocabulary" onBack={() => router.back()} />
+        <View style={[commonStyles.grow, commonStyles.centered]}>
           <ActivityIndicator color={COLORS.primary} />
         </View>
-      ) : null}
+      </ScreenScaffold>
+    );
+  }
 
-      {!isLoading && loadError ? (
-        <Text style={{ fontSize: FONT_SIZES.md, color: COLORS.textMuted }}>{loadError}</Text>
-      ) : null}
+  if (loadError || !vocabulary) {
+    return (
+      <ScreenScaffold>
+        <ScreenHeader title="Vocabulary" onBack={() => router.back()} />
+        <Text style={{ fontSize: FONT_SIZES.md, color: COLORS.textMuted }}>
+          {loadError ?? 'Vocabulary not found.'}
+        </Text>
+        <Pressable onPress={() => void loadVocabulary()}>
+          <Text
+            style={{
+              marginTop: 16,
+              fontSize: FONT_SIZES.md,
+              fontWeight: FONT_WEIGHTS.semibold,
+              color: COLORS.primary,
+            }}
+          >
+            Try again
+          </Text>
+        </Pressable>
+      </ScreenScaffold>
+    );
+  }
 
-      {!isLoading && vocabulary ? (
-        <VocabularyForm
-          submitLabel="Save"
-          initialValues={{
-            arabicWord: vocabulary.arabicWord,
-            meaning: vocabulary.meaning,
-            exampleSentence: vocabulary.exampleSentence ?? '',
-            description: vocabulary.description ?? '',
-            imageUri: vocabulary.imageUri ?? '',
-          }}
-          onSubmit={async (values) => {
-            await saveVocabulary(vocabulary.id, values);
-            router.replace('/vocabulary');
-          }}
-          onDelete={handleDelete}
-        />
-      ) : null}
-    </ScreenScaffold>
+  return (
+    <VocabularyDetailScreen
+      vocabulary={vocabulary}
+      onBack={() => router.back()}
+      onEdit={() => router.push(`/vocabulary/${vocabulary.id}/edit`)}
+    />
   );
 }

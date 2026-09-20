@@ -1,5 +1,10 @@
 import { getDatabase } from '@/db/database';
-import type { Vocabulary, VocabularyInput } from '@/features/vocabulary/types';
+import type {
+  Vocabulary,
+  VocabularyExample,
+  VocabularyInput,
+} from '@/features/vocabulary/types';
+import { createId } from '@/utils/createId';
 
 type VocabularyRow = {
   id: string;
@@ -12,17 +17,103 @@ type VocabularyRow = {
   updated_at: string;
 };
 
+type VocabularyExampleRow = {
+  vocabulary_id: string;
+  sentence: string;
+  meaning: string | null;
+  sort_order: number;
+};
+
 function mapVocabularyRow(row: VocabularyRow): Vocabulary {
   return {
     id: row.id,
     arabicWord: row.arabic_word,
     meaning: row.meaning,
-    exampleSentence: row.example_sentence ?? undefined,
+    examples: [],
     description: row.description ?? undefined,
     imageUri: row.image_uri ?? undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
+}
+
+function mapExampleRow(row: VocabularyExampleRow): VocabularyExample {
+  return {
+    sentence: row.sentence,
+    meaning: row.meaning ?? undefined,
+  };
+}
+
+async function findExamplesByVocabularyIds(
+  vocabularyIds: string[],
+): Promise<Map<string, VocabularyExample[]>> {
+  const examplesByVocabularyId = new Map<string, VocabularyExample[]>();
+
+  if (vocabularyIds.length === 0) {
+    return examplesByVocabularyId;
+  }
+
+  const db = await getDatabase();
+  const placeholders = vocabularyIds.map(() => '?').join(', ');
+  const rows = await db.getAllAsync<VocabularyExampleRow>(
+    `SELECT vocabulary_id, sentence, meaning, sort_order
+     FROM vocabulary_example
+     WHERE vocabulary_id IN (${placeholders})
+     ORDER BY sort_order ASC;`,
+    ...vocabularyIds,
+  );
+
+  for (const row of rows) {
+    const existing = examplesByVocabularyId.get(row.vocabulary_id) ?? [];
+    existing.push(mapExampleRow(row));
+    examplesByVocabularyId.set(row.vocabulary_id, existing);
+  }
+
+  return examplesByVocabularyId;
+}
+
+export async function enrichVocabularyWithExamples(
+  vocabularies: Vocabulary[],
+): Promise<Vocabulary[]> {
+  if (vocabularies.length === 0) {
+    return vocabularies;
+  }
+
+  const examplesById = await findExamplesByVocabularyIds(
+    vocabularies.map((vocabulary) => vocabulary.id),
+  );
+
+  return vocabularies.map((vocabulary) => ({
+    ...vocabulary,
+    examples: examplesById.get(vocabulary.id) ?? [],
+  }));
+}
+
+async function replaceVocabularyExamples(
+  vocabularyId: string,
+  examples: VocabularyExample[],
+): Promise<void> {
+  const db = await getDatabase();
+
+  await db.runAsync('DELETE FROM vocabulary_example WHERE vocabulary_id = ?;', vocabularyId);
+
+  for (let index = 0; index < examples.length; index += 1) {
+    const example = examples[index];
+    await db.runAsync(
+      `INSERT INTO vocabulary_example (
+        id,
+        vocabulary_id,
+        sentence,
+        meaning,
+        sort_order
+      ) VALUES (?, ?, ?, ?, ?);`,
+      createId(),
+      vocabularyId,
+      example.sentence,
+      example.meaning ?? null,
+      index,
+    );
+  }
 }
 
 export async function countVocabulary(): Promise<number> {
@@ -42,7 +133,7 @@ export async function findRecentVocabulary(limit: number): Promise<Vocabulary[]>
      LIMIT ?;`,
     limit,
   );
-  return rows.map(mapVocabularyRow);
+  return enrichVocabularyWithExamples(rows.map(mapVocabularyRow));
 }
 
 export async function searchVocabulary(query: string): Promise<Vocabulary[]> {
@@ -55,7 +146,7 @@ export async function searchVocabulary(query: string): Promise<Vocabulary[]> {
        FROM vocabulary
        ORDER BY datetime(updated_at) DESC;`,
     );
-    return rows.map(mapVocabularyRow);
+    return enrichVocabularyWithExamples(rows.map(mapVocabularyRow));
   }
 
   const pattern = `%${trimmed}%`;
@@ -67,7 +158,7 @@ export async function searchVocabulary(query: string): Promise<Vocabulary[]> {
     pattern,
     pattern,
   );
-  return rows.map(mapVocabularyRow);
+  return enrichVocabularyWithExamples(rows.map(mapVocabularyRow));
 }
 
 export async function findVocabularyById(id: string): Promise<Vocabulary | null> {
@@ -76,7 +167,13 @@ export async function findVocabularyById(id: string): Promise<Vocabulary | null>
     'SELECT * FROM vocabulary WHERE id = ? LIMIT 1;',
     id,
   );
-  return row ? mapVocabularyRow(row) : null;
+
+  if (!row) {
+    return null;
+  }
+
+  const [vocabulary] = await enrichVocabularyWithExamples([mapVocabularyRow(row)]);
+  return vocabulary ?? null;
 }
 
 export async function insertVocabulary(
@@ -100,12 +197,14 @@ export async function insertVocabulary(
     id,
     input.arabicWord,
     input.meaning,
-    input.exampleSentence ?? null,
+    null,
     input.description ?? null,
     input.imageUri ?? null,
     timestamps.createdAt,
     timestamps.updatedAt,
   );
+
+  await replaceVocabularyExamples(id, input.examples);
 
   const created = await findVocabularyById(id);
   if (!created) {
@@ -133,7 +232,7 @@ export async function updateVocabulary(
      WHERE id = ?;`,
     input.arabicWord,
     input.meaning,
-    input.exampleSentence ?? null,
+    null,
     input.description ?? null,
     input.imageUri ?? null,
     updatedAt,
@@ -143,6 +242,8 @@ export async function updateVocabulary(
   if (result.changes === 0) {
     throw new Error('Vocabulary not found', { cause: { id } });
   }
+
+  await replaceVocabularyExamples(id, input.examples);
 
   const updated = await findVocabularyById(id);
   if (!updated) {
