@@ -1,18 +1,60 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { useColorScheme } from 'react-native';
+import { Stack } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import AppTabs from '@/components/app-tabs';
+import { COLORS, FONT_SIZES, SPACING } from '@/constants/theme';
+import { initializeDatabase } from '@/db/database';
 
-SplashScreen.preventAutoHideAsync();
+export default function RootLayout() {
+  const [isReady, setIsReady] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
-  return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AnimatedSplashOverlay />
-      <AppTabs />
-    </ThemeProvider>
-  );
+  useEffect(() => {
+    initializeDatabase()
+      .then(() => setIsReady(true))
+      .catch((error: unknown) => {
+        const message =
+          error instanceof Error ? error.message : 'Could not initialize the database.';
+        setErrorMessage(message);
+      });
+  }, []);
+
+  if (errorMessage) {
+    return (
+      <View style={styles.centered}>
+        <Text style={styles.errorTitle}>Database error</Text>
+        <Text style={styles.errorBody}>{errorMessage}</Text>
+      </View>
+    );
+  }
+
+  if (!isReady) {
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+      </View>
+    );
+  }
+
+  return <Stack screenOptions={{ headerShown: false }} />;
 }
+
+const styles = StyleSheet.create({
+  centered: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.background,
+    paddingHorizontal: SPACING.lg,
+  },
+  errorTitle: {
+    fontSize: FONT_SIZES.xxl,
+    color: COLORS.text,
+    marginBottom: SPACING.xs,
+  },
+  errorBody: {
+    fontSize: FONT_SIZES.md,
+    color: COLORS.textMuted,
+    textAlign: 'center',
+  },
+});
