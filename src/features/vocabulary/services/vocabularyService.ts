@@ -9,10 +9,8 @@ import {
 } from '@/features/vocabulary/repositories/vocabularyRepository';
 import type { VocabularyValidatedInput } from '@/features/vocabulary/schemas/vocabularySchema';
 import type { HomeSummary, Vocabulary, VocabularyInput } from '@/features/vocabulary/types';
-import {
-  countDueReviews,
-  insertInitialReviewState,
-} from '@/features/review/repositories/reviewRepository';
+import { getPracticeSummary } from '@/features/quiz/services/quizService';
+import { insertInitialReviewState } from '@/features/review/repositories/reviewRepository';
 import { createId } from '@/utils/createId';
 import { toIsoNow } from '@/utils/dates';
 
@@ -27,17 +25,16 @@ function toVocabularyInput(values: VocabularyValidatedInput): VocabularyInput {
 }
 
 export async function getHomeSummary(): Promise<HomeSummary> {
-  const nowIso = toIsoNow();
-  const [totalWords, dueReviewCount, recentlyAdded] = await Promise.all([
+  const [totalWords, practice, recentlyAdded] = await Promise.all([
     countVocabulary(),
-    countDueReviews(nowIso),
+    getPracticeSummary(),
     findRecentVocabulary(3),
   ]);
 
   return {
     totalWords,
-    dueReviewCount,
     recentlyAdded,
+    practice,
   };
 }
 
