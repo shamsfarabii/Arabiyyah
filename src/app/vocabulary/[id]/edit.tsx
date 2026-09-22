@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
@@ -14,6 +14,7 @@ import {
 } from '@/features/vocabulary/services/vocabularyService';
 import type { Vocabulary } from '@/features/vocabulary/types';
 import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
+import { appAlert } from '@/utils/appAlert';
 import { commonStyles } from '@/styles/commonStyles';
 
 export default function EditVocabularyRoute() {
@@ -62,7 +63,7 @@ export default function EditVocabularyRoute() {
   }, [loadVocabulary]);
 
   const handleDelete = () => {
-    Alert.alert(
+    appAlert(
       'Delete vocabulary',
       'This card and its review history will be removed.',
       [
@@ -79,7 +80,7 @@ export default function EditVocabularyRoute() {
               } catch (error: unknown) {
                 const message =
                   error instanceof Error ? error.message : 'Could not delete vocabulary.';
-                Alert.alert('Delete failed', message);
+                appAlert('Delete failed', message);
               }
             })();
           },

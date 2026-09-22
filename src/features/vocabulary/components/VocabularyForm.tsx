@@ -10,7 +10,7 @@ import {
   type SubmitErrorHandler,
   type SubmitHandler,
 } from 'react-hook-form';
-import { Alert, Linking, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Linking, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { AppIcon } from '@/components/ui/AppIcon';
 import { FormSection } from '@/components/ui/FormSection';
@@ -39,6 +39,7 @@ import {
   type VocabularyValidatedInput,
 } from '@/features/vocabulary/schemas/vocabularySchema';
 import { createShadow } from '@/helpers/styleHelpers';
+import { appAlert } from '@/utils/appAlert';
 import { commonStyles } from '@/styles/commonStyles';
 
 type VocabularyFormProps = {
@@ -124,7 +125,7 @@ export function VocabularyForm({
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
     if (!permission.granted) {
-      Alert.alert(
+      appAlert(
         'Photo access needed',
         'Allow access to your photos so you can attach a picture to this word.',
         permission.canAskAgain
@@ -147,7 +148,7 @@ export function VocabularyForm({
         setValue('imageUri', result.assets[0].uri, { shouldDirty: true });
       }
     } catch {
-      Alert.alert('Could not open photos', 'Please try picking the image again.');
+      appAlert('Could not open photos', 'Please try picking the image again.');
     }
   };
 
@@ -165,7 +166,7 @@ export function VocabularyForm({
       return;
     }
 
-    Alert.alert('Remove example?', 'This example will be cleared from the word.', [
+    appAlert('Remove example?', 'This example will be cleared from the word.', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Remove', style: 'destructive', onPress: () => remove(index) },
     ]);
@@ -178,7 +179,7 @@ export function VocabularyForm({
       } catch (error: unknown) {
         const message =
           error instanceof Error ? error.message : 'Could not save vocabulary.';
-        Alert.alert('Save failed', message);
+        appAlert('Save failed', message);
       }
     },
     [onSubmit],

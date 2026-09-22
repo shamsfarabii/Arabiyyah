@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
@@ -19,6 +19,7 @@ import { QUESTION_TIME_LIMIT_SECONDS } from '@/features/quiz/constants';
 import { useQuiz } from '@/features/quiz/hooks/useQuiz';
 import type { QuizOptionState } from '@/features/quiz/components/QuizOptionButton';
 import { createShadow } from '@/helpers/styleHelpers';
+import { appAlert } from '@/utils/appAlert';
 import { commonStyles } from '@/styles/commonStyles';
 
 const OPTION_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
@@ -46,7 +47,7 @@ export function QuizSessionScreen({ questionCount }: QuizSessionScreenProps) {
       return;
     }
 
-    Alert.alert(
+    appAlert(
       'Leave this quiz?',
       'Answers you already gave are saved. The rest of the quiz will be discarded.',
       [

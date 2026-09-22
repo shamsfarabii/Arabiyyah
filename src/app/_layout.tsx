@@ -2,6 +2,7 @@ import { Stack } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
+import { AppAlertProvider } from '@/components/ui/AppAlertProvider';
 import { COLORS, FONT_SIZES, SPACING } from '@/constants/theme';
 import { initializeDatabase } from '@/db/database';
 
@@ -36,7 +37,11 @@ export default function RootLayout() {
     );
   }
 
-  return <Stack screenOptions={{ headerShown: false }} />;
+  return (
+    <AppAlertProvider>
+      <Stack screenOptions={{ headerShown: false }} />
+    </AppAlertProvider>
+  );
 }
 
 const styles = StyleSheet.create({

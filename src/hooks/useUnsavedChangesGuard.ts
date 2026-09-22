@@ -1,6 +1,6 @@
 import { useNavigation } from 'expo-router';
 import { useCallback, useEffect, useRef } from 'react';
-import { Alert } from 'react-native';
+import { appAlert } from '@/utils/appAlert';
 
 type GuardCopy = {
   title: string;
@@ -28,7 +28,7 @@ export function useUnsavedChangesGuard(
 
       event.preventDefault();
 
-      Alert.alert(title, message, [
+      appAlert(title, message, [
         { text: 'Keep editing', style: 'cancel' },
         {
           text: discardLabel,

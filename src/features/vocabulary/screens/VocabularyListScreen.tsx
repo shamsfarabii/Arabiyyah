@@ -2,7 +2,6 @@ import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -36,6 +35,7 @@ import {
   removeVocabulary,
 } from '@/features/vocabulary/services/vocabularyService';
 import { createShadow } from '@/helpers/styleHelpers';
+import { appAlert } from '@/utils/appAlert';
 import { commonStyles } from '@/styles/commonStyles';
 
 export function VocabularyListScreen() {
@@ -100,7 +100,7 @@ export function VocabularyListScreen() {
       } catch (error: unknown) {
         const message =
           error instanceof Error ? error.message : 'Could not export vocabulary.';
-        Alert.alert('Export failed', message);
+        appAlert('Export failed', message);
       } finally {
         setIsShareBusy(false);
       }
@@ -110,7 +110,7 @@ export function VocabularyListScreen() {
 
   const confirmImport = useCallback(
     (file: NonNullable<Awaited<ReturnType<typeof pickAndParseVocabularyImportFile>>>) => {
-      Alert.alert(
+      appAlert(
         'Import vocabulary',
         `This file contains ${file.items.length} word${file.items.length === 1 ? '' : 's'}. How should duplicates (same Arabic word and meaning) be handled?`,
         [
@@ -123,14 +123,14 @@ export function VocabularyListScreen() {
                 try {
                   const result = await importVocabularyFromFile(file, 'skip');
                   await loadItems(searchQuery);
-                  Alert.alert(
+                  appAlert(
                     'Import complete',
                     `Added ${result.importedCount} word${result.importedCount === 1 ? '' : 's'}.${result.skippedDuplicateCount > 0 ? ` Skipped ${result.skippedDuplicateCount} duplicate${result.skippedDuplicateCount === 1 ? '' : 's'}.` : ''}`,
                   );
                 } catch (error: unknown) {
                   const message =
                     error instanceof Error ? error.message : 'Could not import vocabulary.';
-                  Alert.alert('Import failed', message);
+                  appAlert('Import failed', message);
                 } finally {
                   setIsImportBusy(false);
                 }
@@ -145,14 +145,14 @@ export function VocabularyListScreen() {
                 try {
                   const result = await importVocabularyFromFile(file, 'import');
                   await loadItems(searchQuery);
-                  Alert.alert(
+                  appAlert(
                     'Import complete',
                     `Added ${result.importedCount} word${result.importedCount === 1 ? '' : 's'}.`,
                   );
                 } catch (error: unknown) {
                   const message =
                     error instanceof Error ? error.message : 'Could not import vocabulary.';
-                  Alert.alert('Import failed', message);
+                  appAlert('Import failed', message);
                 } finally {
                   setIsImportBusy(false);
                 }
@@ -177,7 +177,7 @@ export function VocabularyListScreen() {
       } catch (error: unknown) {
         const message =
           error instanceof Error ? error.message : 'Could not read vocabulary file.';
-        Alert.alert('Import failed', message);
+        appAlert('Import failed', message);
       } finally {
         setIsImportBusy(false);
       }
@@ -186,14 +186,14 @@ export function VocabularyListScreen() {
 
   const openExportMenu = useCallback(() => {
     if (items.length === 0) {
-      Alert.alert(
+      appAlert(
         'Nothing to export',
         'Add vocabulary first, or import a collection from another user.',
       );
       return;
     }
 
-    Alert.alert('Export collection', 'Choose which words to include in the JSON file.', [
+    appAlert('Export collection', 'Choose which words to include in the JSON file.', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Export all',
@@ -212,7 +212,7 @@ export function VocabularyListScreen() {
   }, [items.length, runExport]);
 
   const handleDelete = (item: Vocabulary) => {
-    Alert.alert(
+    appAlert(
       'Delete vocabulary',
       `Remove "${item.arabicWord}"?`,
       [
@@ -236,7 +236,7 @@ export function VocabularyListScreen() {
               } catch (error: unknown) {
                 const message =
                   error instanceof Error ? error.message : 'Could not delete vocabulary.';
-                Alert.alert('Delete failed', message);
+                appAlert('Delete failed', message);
               }
             })();
           },
@@ -460,7 +460,7 @@ export function VocabularyListScreen() {
             }
             onPress={() => {
               if (selectedCount === 0) {
-                Alert.alert('Select words', 'Choose at least one word to export.');
+                appAlert('Select words', 'Choose at least one word to export.');
                 return;
               }
               void runExport(Array.from(selectedIds));
