@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { MAX_VOCABULARY_EXAMPLES } from '@/features/vocabulary/constants';
+
 const optionalTextField = z
   .string()
   .trim()
@@ -21,6 +23,10 @@ export const vocabularySchema = z.object({
   meaning: z.string().trim().min(1, 'Meaning is required'),
   examples: z
     .array(vocabularyExampleFormSchema)
+    .max(
+      MAX_VOCABULARY_EXAMPLES,
+      `You can add up to ${MAX_VOCABULARY_EXAMPLES} examples`,
+    )
     .transform((entries) =>
       entries
         .map((entry) => ({

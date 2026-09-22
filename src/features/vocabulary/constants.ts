@@ -1,0 +1,1 @@
+export const MAX_VOCABULARY_EXAMPLES = 3;

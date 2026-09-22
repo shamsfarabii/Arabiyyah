@@ -20,12 +20,13 @@ import {
   FONT_WEIGHTS,
   SPACING,
 } from '@/constants/theme';
-import type { ReviewCard } from '@/features/review/types';
 import {
   getDueReviewCards,
   recordAgain,
   recordKnow,
 } from '@/features/review/services/reviewService';
+import { MAX_VOCABULARY_EXAMPLES } from '@/features/vocabulary/constants';
+import type { ReviewCard } from '@/features/review/types';
 import { createShadow } from '@/helpers/styleHelpers';
 import { commonStyles } from '@/styles/commonStyles';
 
@@ -62,6 +63,8 @@ export function ReviewSessionScreen() {
   );
 
   const currentCard = cards[currentIndex];
+  const displayExamples =
+    currentCard?.vocabulary.examples.slice(0, MAX_VOCABULARY_EXAMPLES) ?? [];
 
   const finishSession = () => {
     Alert.alert('Review complete', 'Nice work. Come back tomorrow for more cards.', [
@@ -166,9 +169,9 @@ export function ReviewSessionScreen() {
             ) : (
               <View style={styles.answerBlock}>
                 <Text style={styles.meaning}>{currentCard.vocabulary.meaning}</Text>
-                {currentCard.vocabulary.examples.length > 0 ? (
+                {displayExamples.length > 0 ? (
                   <View style={styles.examplesBlock}>
-                    {currentCard.vocabulary.examples.map((example, index) => (
+                    {displayExamples.map((example, index) => (
                       <View
                         key={`${example.sentence}-${index}`}
                         style={styles.exampleItem}

@@ -15,6 +15,7 @@ import {
   ICON_SIZES,
   SPACING,
 } from '@/constants/theme';
+import { MAX_VOCABULARY_EXAMPLES } from '@/features/vocabulary/constants';
 import {
   vocabularySchema,
   type VocabularyFormValues,
@@ -142,7 +143,7 @@ export function VocabularyForm({
       <View style={styles.section}>
         <Text style={styles.sectionLabel}>Examples</Text>
         <Text style={styles.sectionHint}>
-          Optional — add one or more sentences that use this word.
+          Optional — add up to {MAX_VOCABULARY_EXAMPLES} sentences that use this word.
         </Text>
         {fields.map((field, index) => (
           <View key={field.id} style={styles.sectionCard}>
@@ -193,14 +194,21 @@ export function VocabularyForm({
           </View>
         ))}
 
-        <PrimaryButton
-          label="Add example"
-          variant="secondary"
-          onPress={() => append({ sentence: '', meaning: '' })}
-          trailing={
-            <AppIcon name="plus" size={ICON_SIZES.md} color={COLORS.primary} weight="semibold" />
-          }
-        />
+        {fields.length < MAX_VOCABULARY_EXAMPLES ? (
+          <PrimaryButton
+            label="Add example"
+            variant="secondary"
+            onPress={() => append({ sentence: '', meaning: '' })}
+            trailing={
+              <AppIcon
+                name="plus"
+                size={ICON_SIZES.md}
+                color={COLORS.primary}
+                weight="semibold"
+              />
+            }
+          />
+        ) : null}
       </View>
 
       <View style={styles.section}>

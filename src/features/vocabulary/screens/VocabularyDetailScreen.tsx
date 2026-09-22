@@ -11,6 +11,7 @@ import {
   FONT_WEIGHTS,
   SPACING,
 } from '@/constants/theme';
+import { MAX_VOCABULARY_EXAMPLES } from '@/features/vocabulary/constants';
 import type { Vocabulary } from '@/features/vocabulary/types';
 import { createShadow } from '@/helpers/styleHelpers';
 
@@ -39,8 +40,8 @@ export function VocabularyDetailScreen({
   onBack,
   onEdit,
 }: VocabularyDetailScreenProps) {
-  const addedLabel = formatAddedDate(vocabulary.createdAt);
-  const hasExamples = vocabulary.examples.length > 0;
+  const displayExamples = vocabulary.examples.slice(0, MAX_VOCABULARY_EXAMPLES);
+  const hasExamples = displayExamples.length > 0;
   const hasDescription = Boolean(vocabulary.description?.trim());
   const hasImage = Boolean(vocabulary.imageUri?.trim());
 
@@ -84,12 +85,12 @@ export function VocabularyDetailScreen({
         <View style={styles.section}>
           <Subheading style={styles.sectionTitle}>Examples</Subheading>
           <View style={styles.examplesCard}>
-            {vocabulary.examples.map((example, index) => (
+            {displayExamples.map((example, index) => (
               <View
                 key={`${index}-${example.sentence}`}
                 style={[
                   styles.exampleRow,
-                  index !== vocabulary.examples.length - 1 && styles.exampleRowBorder,
+                  index !== displayExamples.length - 1 && styles.exampleRowBorder,
                 ]}
               >
                 <View style={styles.exampleContent}>

@@ -7,7 +7,11 @@ export type AppIconName =
   | 'chevronRight'
   | 'arrowRight'
   | 'plus'
-  | 'photo';
+  | 'photo'
+  | 'checkmarkCircle'
+  | 'circle'
+  | 'share'
+  | 'importDoc';
 
 const ICON_NAMES: Record<AppIconName, SymbolViewProps['name']> = {
   chevronLeft: {
@@ -34,6 +38,26 @@ const ICON_NAMES: Record<AppIconName, SymbolViewProps['name']> = {
     ios: 'photo.on.rectangle.angled',
     android: 'image',
     web: 'image',
+  },
+  checkmarkCircle: {
+    ios: 'checkmark.circle.fill',
+    android: 'check_circle',
+    web: 'check_circle',
+  },
+  circle: {
+    ios: 'circle',
+    android: 'radio_button_unchecked',
+    web: 'radio_button_unchecked',
+  },
+  share: {
+    ios: 'square.and.arrow.up',
+    android: 'share',
+    web: 'share',
+  },
+  importDoc: {
+    ios: 'square.and.arrow.down',
+    android: 'download',
+    web: 'download',
   },
 };
 
