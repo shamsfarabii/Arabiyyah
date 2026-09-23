@@ -1,4 +1,5 @@
 import * as DocumentPicker from 'expo-document-picker';
+import { File } from 'expo-file-system';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { Platform } from 'react-native';
@@ -124,10 +125,25 @@ function parseExportFileContents(raw: string): VocabularyExportFile {
   return result.data;
 }
 
+async function readPickedFileAsText(uri: string): Promise<string> {
+  try {
+    return await new File(uri).text();
+  } catch (error: unknown) {
+    try {
+      return await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.UTF8 });
+    } catch {
+      throw error;
+    }
+  }
+}
+
 export async function pickAndParseVocabularyImportFile(): Promise<VocabularyExportFile | null> {
   const picked = await DocumentPicker.getDocumentAsync({
-    type: 'application/json',
-    copyToCacheDirectory: true,
+    // Android file managers often report .json files as octet-stream or text/plain.
+    type: ['application/json', 'text/plain', 'application/octet-stream'],
+    // On Android, read the picker's content:// URI directly: the picker grants read access to it,
+    // whereas reading the cached copy fails with "Missing 'READ' permission" / java.io errors.
+    copyToCacheDirectory: Platform.OS !== 'android',
     multiple: false,
   });
 
@@ -136,11 +152,7 @@ export async function pickAndParseVocabularyImportFile(): Promise<VocabularyExpo
   }
 
   const asset = picked.assets[0];
-  const uri = asset.uri;
-
-  const raw = await FileSystem.readAsStringAsync(uri, {
-    encoding: FileSystem.EncodingType.UTF8,
-  });
+  const raw = asset.file ? await asset.file.text() : await readPickedFileAsText(asset.uri);
 
   return parseExportFileContents(raw);
 }

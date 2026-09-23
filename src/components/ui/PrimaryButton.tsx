@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import {
+  ActivityIndicator,
   Pressable,
   StyleSheet,
   Text,
@@ -13,6 +14,7 @@ import {
   FONT_SIZES,
   FONT_WEIGHTS,
   SIZES,
+  SPACING,
 } from '@/constants/theme';
 import { commonStyles } from '@/styles/commonStyles';
 
@@ -20,47 +22,67 @@ type PrimaryButtonProps = {
   label: string;
   onPress: () => void;
   disabled?: boolean;
+  /** Shows a spinner in place of the leading slot and blocks presses. */
+  loading?: boolean;
   variant?: 'primary' | 'secondary' | 'danger';
   style?: StyleProp<ViewStyle>;
+  leading?: ReactNode;
   trailing?: ReactNode;
+  accessibilityLabel?: string;
+  accessibilityHint?: string;
 };
 
 export function PrimaryButton({
   label,
   onPress,
   disabled = false,
+  loading = false,
   variant = 'primary',
   style,
+  leading,
   trailing,
+  accessibilityLabel,
+  accessibilityHint,
 }: PrimaryButtonProps) {
+  const isBlocked = disabled || loading;
+  const spinnerColor = variant === 'primary' ? COLORS.textOnPrimary : COLORS.primary;
+
   return (
     <Pressable
       onPress={onPress}
-      disabled={disabled}
+      disabled={isBlocked}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? label}
+      accessibilityHint={accessibilityHint}
+      accessibilityState={{ disabled: isBlocked, busy: loading }}
       style={({ pressed }) => [
         styles.base,
         commonStyles.row,
-        commonStyles.spaceBetween,
-        commonStyles.alignCenter,
+        commonStyles.centered,
         variant === 'primary' && styles.primary,
         variant === 'secondary' && styles.secondary,
         variant === 'danger' && styles.danger,
         disabled && styles.disabled,
-        pressed && !disabled && styles.pressed,
+        pressed && !isBlocked && styles.pressed,
         style,
-        commonStyles.centered,
       ]}
     >
+      {loading ? (
+        <ActivityIndicator size="small" color={spinnerColor} />
+      ) : (
+        leading
+      )}
       <Text
         style={[
           styles.label,
           variant === 'secondary' && styles.secondaryLabel,
           variant === 'danger' && styles.dangerLabel,
         ]}
+        numberOfLines={1}
       >
         {label}
       </Text>
-      {trailing ? <Text style={styles.trailing}>{trailing}</Text> : null}
+      {trailing}
     </Pressable>
   );
 }
@@ -70,6 +92,7 @@ const styles = StyleSheet.create({
     minHeight: SIZES.primaryButtonHeight,
     paddingHorizontal: 18,
     borderRadius: BORDER_RADIUS.lg,
+    gap: SPACING.sm,
   },
   primary: {
     backgroundColor: COLORS.primary,
@@ -80,9 +103,9 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
   },
   danger: {
-    backgroundColor: COLORS.card,
+    backgroundColor: COLORS.surfaceDanger,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: COLORS.borderDanger,
   },
   disabled: {
     opacity: 0.5,
@@ -100,10 +123,6 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
   },
   dangerLabel: {
-    color: COLORS.text,
-  },
-  trailing: {
-    fontSize: 21,
-    color: COLORS.textOnPrimary,
+    color: COLORS.danger,
   },
 });

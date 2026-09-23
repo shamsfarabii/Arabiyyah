@@ -25,7 +25,16 @@ export const COLORS = {
   wordIconText: '#678071',
   chevron: '#A6AFA9',
   arabicWord: '#20372A',
+  danger: '#B3261E',
+  surfaceDanger: '#FDECEA',
+  borderDanger: '#E7B9B4',
+  surfaceSuccess: '#E7F2EB',
+  borderSuccess: '#A8C4B2',
   decorationOverlay: 'rgba(255,255,255,0.08)',
+  surfaceInput: '#FBFCFA',
+  inputFocusBorder: '#28744E',
+  inputFocusHalo: 'rgba(40, 116, 78, 0.10)',
+  imageScrim: 'rgba(24, 57, 43, 0.55)',
 } as const;
 
 export const SPACING = {
@@ -74,13 +83,19 @@ export const BORDER_RADIUS = {
 
 export const SIZES = {
   profile: 44,
-  reviewIcon: 46,
+  practiceIcon: 46,
   primaryButtonHeight: 50,
   addButtonHeight: 56,
   wordRowMinHeight: 70,
   wordIcon: 34,
   vocabularyCardMinHeight: 150,
   headerIconButton: 40,
+  quizOptionMinHeight: 58,
+  quizOptionBadge: 30,
+  quizTimerTrackHeight: 6,
+  iconButton: 32,
+  stepBadge: 24,
+  imagePreviewHeight: 200,
 } as const;
 
 export const ICON_SIZES = {
@@ -88,4 +103,5 @@ export const ICON_SIZES = {
   md: 18,
   lg: 20,
   xl: 22,
+  xxl: 26,
 } as const;
