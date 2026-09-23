@@ -107,6 +107,11 @@ export async function findQuizCandidates(
        COALESCE(s.wrong_count, 0) AS wrong_count,
        COALESCE(s.total_attempts, 0) AS total_attempts
      FROM vocabulary v
+     INNER JOIN (
+       SELECT DISTINCT vocabulary_id
+       FROM review_attempt
+     ) reviewed
+       ON reviewed.vocabulary_id = v.id
      LEFT JOIN vocabulary_stats s
        ON s.vocabulary_id = v.id
       AND s.user_id = ?

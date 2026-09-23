@@ -14,7 +14,15 @@ export type AppIconName =
   | 'importDoc'
   | 'trash'
   | 'xmark'
-  | 'warning';
+  | 'warning'
+  | 'book'
+  | 'refresh'
+  | 'quiz'
+  | 'eye'
+  | 'minus'
+  | 'clock'
+  | 'settings'
+  | 'home';
 
 const ICON_NAMES: Record<AppIconName, SymbolViewProps['name']> = {
   chevronLeft: {
@@ -76,6 +84,46 @@ const ICON_NAMES: Record<AppIconName, SymbolViewProps['name']> = {
     ios: 'exclamationmark.circle.fill',
     android: 'error',
     web: 'error',
+  },
+  book: {
+    ios: 'book.closed.fill',
+    android: 'menu_book',
+    web: 'menu_book',
+  },
+  refresh: {
+    ios: 'arrow.triangle.2.circlepath',
+    android: 'autorenew',
+    web: 'autorenew',
+  },
+  quiz: {
+    ios: 'questionmark.bubble.fill',
+    android: 'quiz',
+    web: 'quiz',
+  },
+  eye: {
+    ios: 'eye.fill',
+    android: 'visibility',
+    web: 'visibility',
+  },
+  minus: {
+    ios: 'minus',
+    android: 'remove',
+    web: 'remove',
+  },
+  clock: {
+    ios: 'clock',
+    android: 'schedule',
+    web: 'schedule',
+  },
+  home: {
+    ios: 'house.fill',
+    android: 'home',
+    web: 'home',
+  },
+  settings: {
+    ios: 'gearshape.fill',
+    android: 'settings',
+    web: 'settings',
   },
 };
 

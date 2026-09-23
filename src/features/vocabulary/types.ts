@@ -24,8 +24,19 @@ export type VocabularyInput = {
   imageUri?: string;
 };
 
+export type ReviewProgressSummary = {
+  sessionId: string;
+  completedCount: number;
+  totalCount: number;
+};
+
 export type HomeSummary = {
   totalWords: number;
   recentlyAdded: Vocabulary[];
   practice: PracticeSummary;
+  review: {
+    canStart: boolean;
+    quizEligibleCount: number;
+    activeProgress: ReviewProgressSummary | null;
+  };
 };

@@ -19,6 +19,7 @@ import type {
 } from '@/features/quiz/types/quiz.types';
 import { hasEnoughVocabularyForQuiz } from '@/features/quiz/utils/buildQuizQuestions';
 import { createSerialQueue } from '@/features/quiz/utils/createSerialQueue';
+import { countQuizEligibleVocabulary } from '@/features/review/repositories/reviewRepository';
 import { countVocabulary } from '@/features/vocabulary/repositories/vocabularyRepository';
 import { toIsoNow } from '@/utils/dates';
 
@@ -30,16 +31,24 @@ async function getQuizDatabase(): Promise<AppDatabase> {
 }
 
 export type QuizSetupInfo = {
+  /** Vocabulary with at least one completed review attempt. */
   availableCount: number;
   canStart: boolean;
+  /** All saved vocabulary, including words not yet reviewed. */
+  totalVocabulary: number;
 };
 
 export async function getQuizSetupInfo(): Promise<QuizSetupInfo> {
-  const availableCount = await countVocabulary();
+  const db = await getQuizDatabase();
+  const [totalVocabulary, eligibleCount] = await Promise.all([
+    countVocabulary(),
+    countQuizEligibleVocabulary(db),
+  ]);
 
   return {
-    availableCount,
-    canStart: hasEnoughVocabularyForQuiz(availableCount),
+    availableCount: eligibleCount,
+    canStart: hasEnoughVocabularyForQuiz(eligibleCount),
+    totalVocabulary,
   };
 }
 

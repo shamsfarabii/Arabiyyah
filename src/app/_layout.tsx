@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import { AppAlertProvider } from '@/components/ui/AppAlertProvider';
+import { BottomNav } from '@/components/ui/BottomNav';
 import { COLORS, FONT_SIZES, SPACING } from '@/constants/theme';
 import { initializeDatabase } from '@/db/database';
 
@@ -39,12 +40,21 @@ export default function RootLayout() {
 
   return (
     <AppAlertProvider>
-      <Stack screenOptions={{ headerShown: false }} />
+      <View style={styles.app}>
+        <View style={styles.app}>
+          <Stack screenOptions={{ headerShown: false }} />
+        </View>
+        <BottomNav />
+      </View>
     </AppAlertProvider>
   );
 }
 
 const styles = StyleSheet.create({
+  app: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
   centered: {
     flex: 1,
     alignItems: 'center',

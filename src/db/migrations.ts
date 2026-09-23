@@ -2,7 +2,7 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 
 import { createId } from '@/utils/createId';
 
-const DATABASE_VERSION = 4;
+const DATABASE_VERSION = 5;
 
 export const MIGRATION_V1 = `
 CREATE TABLE IF NOT EXISTS vocabulary (
@@ -42,6 +42,42 @@ CREATE TABLE IF NOT EXISTS vocabulary_example (
 
 CREATE INDEX IF NOT EXISTS idx_vocabulary_example_vocabulary_id
   ON vocabulary_example(vocabulary_id);
+`;
+
+export const MIGRATION_V5 = `
+CREATE TABLE IF NOT EXISTS review_session (
+  id TEXT PRIMARY KEY NOT NULL,
+  started_at TEXT NOT NULL,
+  completed_at TEXT,
+  plan_json TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_review_session_completed
+  ON review_session(completed_at);
+
+CREATE TABLE IF NOT EXISTS review_attempt (
+  id TEXT PRIMARY KEY NOT NULL,
+  session_id TEXT NOT NULL,
+  vocabulary_id TEXT NOT NULL,
+  result TEXT NOT NULL CHECK (result IN ('known', 'unknown')),
+  review_direction TEXT NOT NULL CHECK (
+    review_direction IN ('arabic_to_meaning', 'meaning_to_arabic')
+  ),
+  reviewed_at TEXT NOT NULL,
+  UNIQUE (session_id, vocabulary_id),
+  FOREIGN KEY (session_id)
+    REFERENCES review_session(id)
+    ON DELETE CASCADE,
+  FOREIGN KEY (vocabulary_id)
+    REFERENCES vocabulary(id)
+    ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_review_attempt_vocabulary
+  ON review_attempt(vocabulary_id, reviewed_at);
+
+CREATE INDEX IF NOT EXISTS idx_review_attempt_session
+  ON review_attempt(session_id);
 `;
 
 export const MIGRATION_V3 = `
@@ -267,6 +303,15 @@ export async function runMigrations(db: SQLiteDatabase): Promise<void> {
 
     // Recreates anything that was dropped, and is a no-op otherwise.
     await db.execAsync(MIGRATION_V3);
+    await db.execAsync('PRAGMA user_version = 4;');
+  }
+
+  const versionAfterV4 = await db.getFirstAsync<{ user_version: number }>(
+    'PRAGMA user_version;',
+  );
+
+  if ((versionAfterV4?.user_version ?? 0) < 5) {
+    await db.execAsync(MIGRATION_V5);
     await db.execAsync(`PRAGMA user_version = ${DATABASE_VERSION};`);
   }
 }

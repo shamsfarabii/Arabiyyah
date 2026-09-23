@@ -24,6 +24,7 @@ const PRESET_QUESTION_COUNTS = [5, 10, 20];
 
 export function QuizSetupScreen() {
   const [availableCount, setAvailableCount] = useState(0);
+  const [totalVocabulary, setTotalVocabulary] = useState(0);
   const [canStart, setCanStart] = useState(false);
   const [questionCountInput, setQuestionCountInput] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -36,6 +37,7 @@ export function QuizSetupScreen() {
     try {
       const info = await getQuizSetupInfo();
       setAvailableCount(info.availableCount);
+      setTotalVocabulary(info.totalVocabulary);
       setCanStart(info.canStart);
       setQuestionCountInput(
         info.canStart ? String(Math.min(DEFAULT_QUESTION_COUNT, info.availableCount)) : '',
@@ -103,15 +105,25 @@ export function QuizSetupScreen() {
         <View style={[commonStyles.grow, commonStyles.centered, styles.state]}>
           <Text style={styles.stateTitle}>Not enough vocabulary yet</Text>
           <Text style={styles.stateBody}>
-            {availableCount === 0
+            {totalVocabulary === 0
               ? 'Add vocabulary words first and they will show up here as quiz questions.'
-              : `A quiz needs at least ${MIN_QUIZ_VOCABULARY_COUNT} words so every question has a real choice. You have ${availableCount}.`}
+              : availableCount === 0
+                ? `Review words in Daily Review before they can appear in a quiz. You have ${totalVocabulary} word${totalVocabulary === 1 ? '' : 's'} waiting.`
+                : `A quiz needs at least ${MIN_QUIZ_VOCABULARY_COUNT} reviewed words so every question has a real choice. You have ${availableCount} quiz-ready word${availableCount === 1 ? '' : 's'}.`}
           </Text>
-          <PrimaryButton
-            label="Add Vocabulary"
-            onPress={() => router.push('/vocabulary/new')}
-            style={styles.stateButton}
-          />
+          {totalVocabulary > 0 && availableCount === 0 ? (
+            <PrimaryButton
+              label="Daily Review"
+              onPress={() => router.push('/review')}
+              style={styles.stateButton}
+            />
+          ) : (
+            <PrimaryButton
+              label="Add Vocabulary"
+              onPress={() => router.push('/vocabulary/new')}
+              style={styles.stateButton}
+            />
+          )}
           <PrimaryButton
             label="Back to Vocabulary"
             onPress={() => router.replace('/vocabulary')}
@@ -169,7 +181,7 @@ export function QuizSetupScreen() {
           </View>
 
           <Text style={styles.footnote}>
-            Questions are picked for you, with more practice on the words you get wrong.
+            Only reviewed words are included. Questions favor words you miss most often in quizzes.
           </Text>
 
           <View style={commonStyles.grow} />
