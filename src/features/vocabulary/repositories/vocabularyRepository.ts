@@ -289,3 +289,24 @@ export async function deleteVocabulary(id: string): Promise<void> {
     throw new Error('Vocabulary not found', { cause: { id } });
   }
 }
+
+export async function deleteVocabularyByIds(ids: string[]): Promise<number> {
+  if (ids.length === 0) {
+    return 0;
+  }
+
+  const db = await getDatabase();
+  const placeholders = ids.map(() => '?').join(', ');
+  const result = await db.runAsync(
+    `DELETE FROM vocabulary WHERE id IN (${placeholders});`,
+    ...ids,
+  );
+
+  return result.changes;
+}
+
+export async function deleteAllVocabulary(): Promise<number> {
+  const db = await getDatabase();
+  const result = await db.runAsync('DELETE FROM vocabulary;');
+  return result.changes;
+}

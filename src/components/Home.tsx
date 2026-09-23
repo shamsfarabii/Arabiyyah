@@ -36,8 +36,8 @@ const RECENTLY_ADDED_LIMIT = 3;
 
 const emptySummary: HomeSummary = {
   totalWords: 0,
-  dueReviewCount: 0,
   recentlyAdded: [],
+  practice: { answeredCount: 0, accuracyPercent: null },
 };
 
 const Home = () => {
@@ -60,18 +60,18 @@ const Home = () => {
     }, [loadSummary]),
   );
 
-  const handleStartReview = () => {
-    router.push('/review');
+  const handleAttemptQuiz = () => {
+    router.push('/quiz');
   };
 
   const handleAddVocabulary = () => {
     router.push('/vocabulary/new');
   };
 
-  const reviewDescription =
-    summary.dueReviewCount === 1
-      ? '1 card is waiting for you'
-      : `${summary.dueReviewCount} cards are waiting for you`;
+  const practiceDescription =
+    summary.practice.accuracyPercent === null
+      ? `Practice your ${summary.totalWords} ${summary.totalWords === 1 ? 'word' : 'words'}`
+      : `${summary.practice.answeredCount} answered · ${summary.practice.accuracyPercent}% accuracy`;
 
   const recentItems = summary.recentlyAdded.slice(0, RECENTLY_ADDED_LIMIT);
 
@@ -111,22 +111,22 @@ const Home = () => {
           <Text style={styles.arabicDecoration}>كلمات</Text>
         </Pressable>
 
-        <View style={styles.reviewCard}>
+        <View style={styles.practiceCard}>
           <View style={[commonStyles.row, commonStyles.alignCenter]}>
-            <View style={[commonStyles.centered, styles.reviewIcon]}>
-              <Text style={styles.reviewIconText}>↻</Text>
+            <View style={[commonStyles.centered, styles.practiceIcon]}>
+              <Text style={styles.practiceIconText}>؟</Text>
             </View>
 
-            <View style={[commonStyles.grow, styles.reviewContent]}>
-              <Subheading>Review</Subheading>
+            <View style={[commonStyles.grow, styles.practiceContent]}>
+              <Subheading>Quiz</Subheading>
               <BodyText style={styledTextSpacing.sectionDescription}>
-                {isLoading ? 'Loading cards…' : reviewDescription}
+                {isLoading ? 'Loading your progress…' : practiceDescription}
               </BodyText>
             </View>
           </View>
 
           <Pressable
-            onPress={handleStartReview}
+            onPress={handleAttemptQuiz}
             style={({ pressed }) => [
               styles.primaryButton,
               commonStyles.row,
@@ -135,7 +135,7 @@ const Home = () => {
               pressed && styles.primaryButtonPressed,
             ]}
           >
-            <Text style={styles.primaryButtonText}>Start Review</Text>
+            <Text style={styles.primaryButtonText}>Attempt Quiz</Text>
             <AppIcon
               name="arrowRight"
               size={ICON_SIZES.lg}
@@ -294,7 +294,7 @@ const styles = StyleSheet.create({
     color: COLORS.decorationOverlay,
   },
 
-  reviewCard: {
+  practiceCard: {
     padding: SPACING.lg,
     borderRadius: BORDER_RADIUS.card,
     backgroundColor: COLORS.card,
@@ -304,19 +304,19 @@ const styles = StyleSheet.create({
     ...cardShadow,
   },
 
-  reviewIcon: {
-    width: SIZES.reviewIcon,
-    height: SIZES.reviewIcon,
+  practiceIcon: {
+    width: SIZES.practiceIcon,
+    height: SIZES.practiceIcon,
     borderRadius: BORDER_RADIUS.md,
     backgroundColor: COLORS.surfaceMuted,
   },
 
-  reviewIconText: {
+  practiceIconText: {
     fontSize: 23,
     color: COLORS.primary,
   },
 
-  reviewContent: {
+  practiceContent: {
     marginLeft: SPACING.md - 2,
   },
 

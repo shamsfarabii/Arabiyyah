@@ -2,7 +2,6 @@ import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -33,21 +32,28 @@ import {
 } from '@/features/vocabulary/services/vocabularyImportExportService';
 import {
   listVocabulary,
+  removeAllVocabulary,
+  removeVocabularies,
   removeVocabulary,
 } from '@/features/vocabulary/services/vocabularyService';
 import { createShadow } from '@/helpers/styleHelpers';
+import { appAlert } from '@/utils/appAlert';
 import { commonStyles } from '@/styles/commonStyles';
+
+type SelectionPurpose = 'export' | 'delete';
 
 export function VocabularyListScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [items, setItems] = useState<Vocabulary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectionPurpose, setSelectionPurpose] = useState<SelectionPurpose | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
   const [isShareBusy, setIsShareBusy] = useState(false);
   const [isImportBusy, setIsImportBusy] = useState(false);
+  const [isDeleteBusy, setIsDeleteBusy] = useState(false);
 
+  const isSelectionMode = selectionPurpose !== null;
   const selectedCount = selectedIds.size;
 
   const loadItems = useCallback(async (query: string) => {
@@ -73,7 +79,12 @@ export function VocabularyListScreen() {
   );
 
   const exitSelectionMode = useCallback(() => {
-    setIsSelectionMode(false);
+    setSelectionPurpose(null);
+    setSelectedIds(new Set());
+  }, []);
+
+  const enterSelectionMode = useCallback((purpose: SelectionPurpose) => {
+    setSelectionPurpose(purpose);
     setSelectedIds(new Set());
   }, []);
 
@@ -100,7 +111,7 @@ export function VocabularyListScreen() {
       } catch (error: unknown) {
         const message =
           error instanceof Error ? error.message : 'Could not export vocabulary.';
-        Alert.alert('Export failed', message);
+        appAlert('Export failed', message);
       } finally {
         setIsShareBusy(false);
       }
@@ -110,7 +121,7 @@ export function VocabularyListScreen() {
 
   const confirmImport = useCallback(
     (file: NonNullable<Awaited<ReturnType<typeof pickAndParseVocabularyImportFile>>>) => {
-      Alert.alert(
+      appAlert(
         'Import vocabulary',
         `This file contains ${file.items.length} word${file.items.length === 1 ? '' : 's'}. How should duplicates (same Arabic word and meaning) be handled?`,
         [
@@ -123,14 +134,14 @@ export function VocabularyListScreen() {
                 try {
                   const result = await importVocabularyFromFile(file, 'skip');
                   await loadItems(searchQuery);
-                  Alert.alert(
+                  appAlert(
                     'Import complete',
                     `Added ${result.importedCount} word${result.importedCount === 1 ? '' : 's'}.${result.skippedDuplicateCount > 0 ? ` Skipped ${result.skippedDuplicateCount} duplicate${result.skippedDuplicateCount === 1 ? '' : 's'}.` : ''}`,
                   );
                 } catch (error: unknown) {
                   const message =
                     error instanceof Error ? error.message : 'Could not import vocabulary.';
-                  Alert.alert('Import failed', message);
+                  appAlert('Import failed', message);
                 } finally {
                   setIsImportBusy(false);
                 }
@@ -145,14 +156,14 @@ export function VocabularyListScreen() {
                 try {
                   const result = await importVocabularyFromFile(file, 'import');
                   await loadItems(searchQuery);
-                  Alert.alert(
+                  appAlert(
                     'Import complete',
                     `Added ${result.importedCount} word${result.importedCount === 1 ? '' : 's'}.`,
                   );
                 } catch (error: unknown) {
                   const message =
                     error instanceof Error ? error.message : 'Could not import vocabulary.';
-                  Alert.alert('Import failed', message);
+                  appAlert('Import failed', message);
                 } finally {
                   setIsImportBusy(false);
                 }
@@ -177,7 +188,7 @@ export function VocabularyListScreen() {
       } catch (error: unknown) {
         const message =
           error instanceof Error ? error.message : 'Could not read vocabulary file.';
-        Alert.alert('Import failed', message);
+        appAlert('Import failed', message);
       } finally {
         setIsImportBusy(false);
       }
@@ -186,14 +197,14 @@ export function VocabularyListScreen() {
 
   const openExportMenu = useCallback(() => {
     if (items.length === 0) {
-      Alert.alert(
+      appAlert(
         'Nothing to export',
         'Add vocabulary first, or import a collection from another user.',
       );
       return;
     }
 
-    Alert.alert('Export collection', 'Choose which words to include in the JSON file.', [
+    appAlert('Export collection', 'Choose which words to include in the JSON file.', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Export all',
@@ -204,15 +215,105 @@ export function VocabularyListScreen() {
       {
         text: 'Select words',
         onPress: () => {
-          setIsSelectionMode(true);
-          setSelectedIds(new Set());
+          enterSelectionMode('export');
         },
       },
     ]);
-  }, [items.length, runExport]);
+  }, [enterSelectionMode, items.length, runExport]);
+
+  const runBulkDelete = useCallback(
+    async (ids: string[] | 'all') => {
+      setIsDeleteBusy(true);
+
+      try {
+        const deletedCount =
+          ids === 'all' ? await removeAllVocabulary() : await removeVocabularies(ids);
+        exitSelectionMode();
+        await loadItems(searchQuery);
+        appAlert(
+          'Deleted',
+          `Removed ${deletedCount} word${deletedCount === 1 ? '' : 's'}.`,
+        );
+      } catch (error: unknown) {
+        const message =
+          error instanceof Error ? error.message : 'Could not delete vocabulary.';
+        appAlert('Delete failed', message);
+      } finally {
+        setIsDeleteBusy(false);
+      }
+    },
+    [exitSelectionMode, loadItems, searchQuery],
+  );
+
+  const confirmDeleteAll = useCallback(() => {
+    // While a search is active, "all" means the words on screen, not the whole list.
+    const isFiltered = searchQuery.trim().length > 0;
+    const target = isFiltered ? items.map((item) => item.id) : 'all';
+
+    appAlert(
+      isFiltered ? 'Delete matching words' : 'Delete all vocabulary',
+      `This removes ${isFiltered ? 'the' : 'all'} ${items.length} word${items.length === 1 ? '' : 's'}${isFiltered ? ' matching your search' : ''} and their practice history. This cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: isFiltered ? 'Delete matching' : 'Delete all',
+          style: 'destructive',
+          onPress: () => {
+            void runBulkDelete(target);
+          },
+        },
+      ],
+    );
+  }, [items, runBulkDelete, searchQuery]);
+
+  const confirmDeleteSelected = useCallback(() => {
+    const ids = Array.from(selectedIds);
+
+    if (ids.length === 0) {
+      appAlert('Select words', 'Choose at least one word to delete.');
+      return;
+    }
+
+    appAlert(
+      'Delete vocabulary',
+      `Remove ${ids.length} selected word${ids.length === 1 ? '' : 's'}? This cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            void runBulkDelete(ids);
+          },
+        },
+      ],
+    );
+  }, [runBulkDelete, selectedIds]);
+
+  const openDeleteMenu = useCallback(() => {
+    if (items.length === 0) {
+      appAlert('Nothing to delete', 'Your vocabulary list is already empty.');
+      return;
+    }
+
+    appAlert('Delete vocabulary', 'Choose which words to remove.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Select words',
+        onPress: () => {
+          enterSelectionMode('delete');
+        },
+      },
+      {
+        text: searchQuery.trim().length > 0 ? 'Delete matching' : 'Delete all',
+        style: 'destructive',
+        onPress: confirmDeleteAll,
+      },
+    ]);
+  }, [confirmDeleteAll, enterSelectionMode, items.length, searchQuery]);
 
   const handleDelete = (item: Vocabulary) => {
-    Alert.alert(
+    appAlert(
       'Delete vocabulary',
       `Remove "${item.arabicWord}"?`,
       [
@@ -236,7 +337,7 @@ export function VocabularyListScreen() {
               } catch (error: unknown) {
                 const message =
                   error instanceof Error ? error.message : 'Could not delete vocabulary.';
-                Alert.alert('Delete failed', message);
+                appAlert('Delete failed', message);
               }
             })();
           },
@@ -246,7 +347,7 @@ export function VocabularyListScreen() {
   };
 
   const headerTitle = isSelectionMode ? 'Select words' : 'Vocabulary';
-  const isBusy = isShareBusy || isImportBusy;
+  const isBusy = isShareBusy || isImportBusy || isDeleteBusy;
 
   const headerRight = useMemo(() => {
     if (isSelectionMode) {
@@ -286,7 +387,9 @@ export function VocabularyListScreen() {
         subtitle={
           isSelectionMode
             ? selectedCount === 0
-              ? 'Tap words to include in your export.'
+              ? selectionPurpose === 'delete'
+                ? 'Tap words to delete.'
+                : 'Tap words to include in your export.'
               : `${selectedCount} selected`
             : undefined
         }
@@ -349,6 +452,27 @@ export function VocabularyListScreen() {
               />
               <Text style={styles.collectionActionLabel}>Export</Text>
             </Pressable>
+            <Pressable
+              onPress={openDeleteMenu}
+              disabled={isDeleteBusy}
+              style={({ pressed }) => [
+                styles.collectionActionButton,
+                isDeleteBusy && styles.collectionActionDisabled,
+                pressed && !isDeleteBusy && styles.collectionActionPressed,
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel="Delete vocabulary"
+            >
+              <AppIcon
+                name="trash"
+                size={ICON_SIZES.md}
+                color={COLORS.danger}
+                weight="bold"
+              />
+              <Text style={[styles.collectionActionLabel, styles.collectionActionLabelDanger]}>
+                Delete
+              </Text>
+            </Pressable>
           </View>
         </>
       ) : null}
@@ -357,7 +481,7 @@ export function VocabularyListScreen() {
         <View style={styles.busyBanner}>
           <ActivityIndicator color={COLORS.primary} size="small" />
           <Text style={styles.busyBannerText}>
-            {isShareBusy ? 'Preparing export…' : 'Importing…'}
+            {isShareBusy ? 'Preparing export…' : isImportBusy ? 'Importing…' : 'Deleting…'}
           </Text>
         </View>
       ) : null}
@@ -452,21 +576,34 @@ export function VocabularyListScreen() {
 
       {isSelectionMode ? (
         <View style={styles.selectionFooter}>
-          <PrimaryButton
-            label={
-              selectedCount === 0
-                ? 'Export selected'
-                : `Export ${selectedCount} word${selectedCount === 1 ? '' : 's'}`
-            }
-            onPress={() => {
-              if (selectedCount === 0) {
-                Alert.alert('Select words', 'Choose at least one word to export.');
-                return;
+          {selectionPurpose === 'delete' ? (
+            <PrimaryButton
+              label={
+                selectedCount === 0
+                  ? 'Delete selected'
+                  : `Delete ${selectedCount} word${selectedCount === 1 ? '' : 's'}`
               }
-              void runExport(Array.from(selectedIds));
-            }}
-            disabled={isShareBusy || selectedCount === 0}
-          />
+              variant="danger"
+              onPress={confirmDeleteSelected}
+              disabled={isDeleteBusy || selectedCount === 0}
+            />
+          ) : (
+            <PrimaryButton
+              label={
+                selectedCount === 0
+                  ? 'Export selected'
+                  : `Export ${selectedCount} word${selectedCount === 1 ? '' : 's'}`
+              }
+              onPress={() => {
+                if (selectedCount === 0) {
+                  appAlert('Select words', 'Choose at least one word to export.');
+                  return;
+                }
+                void runExport(Array.from(selectedIds));
+              }}
+              disabled={isShareBusy || selectedCount === 0}
+            />
+          )}
         </View>
       ) : null}
     </ScreenScaffold>
@@ -517,6 +654,9 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.md,
     fontWeight: FONT_WEIGHTS.semibold,
     color: COLORS.primary,
+  },
+  collectionActionLabelDanger: {
+    color: COLORS.danger,
   },
   addIconButton: {
     width: SIZES.headerIconButton,

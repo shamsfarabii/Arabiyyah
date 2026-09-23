@@ -11,7 +11,10 @@ export type AppIconName =
   | 'checkmarkCircle'
   | 'circle'
   | 'share'
-  | 'importDoc';
+  | 'importDoc'
+  | 'trash'
+  | 'xmark'
+  | 'warning';
 
 const ICON_NAMES: Record<AppIconName, SymbolViewProps['name']> = {
   chevronLeft: {
@@ -58,6 +61,21 @@ const ICON_NAMES: Record<AppIconName, SymbolViewProps['name']> = {
     ios: 'square.and.arrow.down',
     android: 'download',
     web: 'download',
+  },
+  trash: {
+    ios: 'trash',
+    android: 'delete',
+    web: 'delete',
+  },
+  xmark: {
+    ios: 'xmark',
+    android: 'close',
+    web: 'close',
+  },
+  warning: {
+    ios: 'exclamationmark.circle.fill',
+    android: 'error',
+    web: 'error',
   },
 };
 

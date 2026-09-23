@@ -1,3 +1,5 @@
+import type { PracticeSummary } from '@/features/quiz/types/quiz.types';
+
 export type VocabularyExample = {
   sentence: string;
   meaning?: string;
@@ -24,6 +26,6 @@ export type VocabularyInput = {
 
 export type HomeSummary = {
   totalWords: number;
-  dueReviewCount: number;
   recentlyAdded: Vocabulary[];
+  practice: PracticeSummary;
 };

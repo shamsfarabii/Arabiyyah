@@ -1,10 +1,20 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
-import { Controller, useFieldArray, useForm } from 'react-hook-form';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useEffect, useRef } from 'react';
+import {
+  Controller,
+  useFieldArray,
+  useForm,
+  useWatch,
+  type SubmitErrorHandler,
+  type SubmitHandler,
+} from 'react-hook-form';
+import { Linking, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { AppIcon } from '@/components/ui/AppIcon';
+import { FormSection } from '@/components/ui/FormSection';
+import { IconButton } from '@/components/ui/IconButton';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { TextField } from '@/components/ui/TextField';
 import {
@@ -13,15 +23,23 @@ import {
   FONT_SIZES,
   FONT_WEIGHTS,
   ICON_SIZES,
+  SIZES,
   SPACING,
 } from '@/constants/theme';
-import { MAX_VOCABULARY_EXAMPLES } from '@/features/vocabulary/constants';
+import {
+  MAX_VOCABULARY_DESCRIPTION_LENGTH,
+  MAX_VOCABULARY_EXAMPLE_LENGTH,
+  MAX_VOCABULARY_EXAMPLES,
+  MAX_VOCABULARY_MEANING_LENGTH,
+  MAX_VOCABULARY_WORD_LENGTH,
+} from '@/features/vocabulary/constants';
 import {
   vocabularySchema,
   type VocabularyFormValues,
   type VocabularyValidatedInput,
 } from '@/features/vocabulary/schemas/vocabularySchema';
 import { createShadow } from '@/helpers/styleHelpers';
+import { appAlert } from '@/utils/appAlert';
 import { commonStyles } from '@/styles/commonStyles';
 
 type VocabularyFormProps = {
@@ -29,6 +47,8 @@ type VocabularyFormProps = {
   submitLabel: string;
   onSubmit: (values: VocabularyValidatedInput) => Promise<void>;
   onDelete?: () => void;
+  /** Lets the host screen warn before leaving with unsaved edits. */
+  onDirtyChange?: (isDirty: boolean) => void;
 };
 
 const emptyDefaults: VocabularyFormValues = {
@@ -41,20 +61,40 @@ const emptyDefaults: VocabularyFormValues = {
 
 const formCardShadow = createShadow(2, COLORS.accent, 0.05, 3);
 
+/** Counts leaf validation errors so the summary banner can be specific. */
+function countFieldErrors(node: unknown): number {
+  if (!node || typeof node !== 'object') {
+    return 0;
+  }
+
+  if (typeof (node as { message?: unknown }).message === 'string') {
+    return 1;
+  }
+
+  return Object.values(node as Record<string, unknown>).reduce<number>(
+    (total, child) => total + countFieldErrors(child),
+    0,
+  );
+}
+
 export function VocabularyForm({
   initialValues,
   submitLabel,
   onSubmit,
   onDelete,
+  onDirtyChange,
 }: VocabularyFormProps) {
   const {
     control,
     handleSubmit,
+    getValues,
     setValue,
-    watch,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isDirty, submitCount },
   } = useForm<VocabularyFormValues, unknown, VocabularyValidatedInput>({
     resolver: zodResolver(vocabularySchema),
+    mode: 'onSubmit',
+    reValidateMode: 'onChange',
+    shouldFocusError: false,
     defaultValues: {
       ...emptyDefaults,
       ...initialValues,
@@ -66,55 +106,154 @@ export function VocabularyForm({
     name: 'examples',
   });
 
-  const imageUri = watch('imageUri');
+  const arabicWordRef = useRef<TextInput>(null);
+  const meaningRef = useRef<TextInput>(null);
+
+  const imageUri = useWatch({ control, name: 'imageUri' });
+  const arabicWordPreview = useWatch({ control, name: 'arabicWord' })?.trim() ?? '';
+  const meaningPreview = useWatch({ control, name: 'meaning' })?.trim() ?? '';
+
+  useEffect(() => {
+    onDirtyChange?.(isDirty);
+  }, [isDirty, onDirtyChange]);
+
+  const errorCount = countFieldErrors(errors);
+  const showErrorSummary = submitCount > 0 && errorCount > 0;
+  const canAddExample = fields.length < MAX_VOCABULARY_EXAMPLES;
 
   const handleChooseImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
     if (!permission.granted) {
-      Alert.alert(
-        'Permission needed',
-        'Allow photo access to attach a vocabulary image.',
+      appAlert(
+        'Photo access needed',
+        'Allow access to your photos so you can attach a picture to this word.',
+        permission.canAskAgain
+          ? [{ text: 'OK' }]
+          : [
+              { text: 'Not now', style: 'cancel' },
+              { text: 'Open Settings', onPress: () => void Linking.openSettings() },
+            ],
       );
       return;
     }
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      quality: 0.85,
-    });
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        quality: 0.85,
+      });
 
-    if (!result.canceled && result.assets[0]) {
-      setValue('imageUri', result.assets[0].uri, { shouldDirty: true });
+      if (!result.canceled && result.assets[0]) {
+        setValue('imageUri', result.assets[0].uri, { shouldDirty: true });
+      }
+    } catch {
+      appAlert('Could not open photos', 'Please try picking the image again.');
     }
   };
 
-  const handleSave = handleSubmit(async (values) => {
-    try {
-      await onSubmit(values);
-    } catch (error: unknown) {
-      const message =
-        error instanceof Error ? error.message : 'Could not save vocabulary.';
-      Alert.alert('Save failed', message);
+  const handleRemoveImage = () => {
+    setValue('imageUri', '', { shouldDirty: true });
+  };
+
+  const handleRemoveExample = (index: number) => {
+    const example = getValues(`examples.${index}`);
+    const isEmpty =
+      !example?.sentence?.trim() && !example?.meaning?.trim();
+
+    if (isEmpty) {
+      remove(index);
+      return;
     }
-  });
+
+    appAlert('Remove example?', 'This example will be cleared from the word.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Remove', style: 'destructive', onPress: () => remove(index) },
+    ]);
+  };
+
+  const submitValues = useCallback<SubmitHandler<VocabularyValidatedInput>>(
+    async (values) => {
+      try {
+        await onSubmit(values);
+      } catch (error: unknown) {
+        const message =
+          error instanceof Error ? error.message : 'Could not save vocabulary.';
+        appAlert('Save failed', message);
+      }
+    },
+    [onSubmit],
+  );
+
+  const focusFirstInvalidField = useCallback<
+    SubmitErrorHandler<VocabularyFormValues>
+  >((formErrors) => {
+    if (formErrors.arabicWord) {
+      arabicWordRef.current?.focus();
+      return;
+    }
+    if (formErrors.meaning) {
+      meaningRef.current?.focus();
+    }
+  }, []);
 
   return (
     <View style={styles.form}>
-      <View style={styles.section}>
-        <Text style={styles.sectionLabel}>Word details</Text>
+      <View style={styles.previewCard}>
+        <Text style={styles.previewLabel}>Preview</Text>
+        <Text
+          style={[styles.previewArabic, !arabicWordPreview && styles.previewPlaceholder]}
+          numberOfLines={2}
+        >
+          {arabicWordPreview || 'كَلِمَة جَدِيدَة'}
+        </Text>
+        <Text
+          style={[styles.previewMeaning, !meaningPreview && styles.previewPlaceholder]}
+          numberOfLines={2}
+        >
+          {meaningPreview || 'Its meaning shows up here'}
+        </Text>
+      </View>
+
+      {showErrorSummary ? (
+        <View
+          style={[commonStyles.row, styles.errorSummary]}
+          accessibilityLiveRegion="polite"
+        >
+          <AppIcon name="warning" size={ICON_SIZES.md} color={COLORS.danger} />
+          <View style={commonStyles.grow}>
+            <Text style={styles.errorSummaryTitle}>Almost there</Text>
+            <Text style={styles.errorSummaryBody}>
+              {errorCount === 1
+                ? 'One field still needs your attention.'
+                : `${errorCount} fields still need your attention.`}
+            </Text>
+          </View>
+        </View>
+      ) : null}
+
+      <FormSection title="The word" badge="Required" badgeTone="required">
         <View style={styles.sectionCard}>
           <Controller
             control={control}
             name="arabicWord"
             render={({ field: { onChange, onBlur, value } }) => (
               <TextField
-                label="Arabic Word"
+                ref={arabicWordRef}
+                label="Arabic word"
                 required
+                hint="Write it exactly the way you want to review it."
                 value={value}
                 onChangeText={onChange}
                 onBlur={onBlur}
                 errorMessage={errors.arabicWord?.message}
+                placeholder="كِتَاب"
                 autoCorrect={false}
+                autoCapitalize="none"
+                maxLength={MAX_VOCABULARY_WORD_LENGTH}
+                returnKeyType="next"
+                submitBehavior="submit"
+                onSubmitEditing={() => meaningRef.current?.focus()}
                 textAlign="right"
                 style={styles.arabicInput}
               />
@@ -126,37 +265,46 @@ export function VocabularyForm({
             name="meaning"
             render={({ field: { onChange, onBlur, value } }) => (
               <TextField
+                ref={meaningRef}
                 label="Meaning"
                 required
                 value={value}
                 onChangeText={onChange}
                 onBlur={onBlur}
                 errorMessage={errors.meaning?.message}
+                placeholder="e.g. book"
                 autoCorrect={false}
-                style={styles.lastFieldInCard}
+                maxLength={MAX_VOCABULARY_MEANING_LENGTH}
+                returnKeyType="done"
               />
             )}
           />
         </View>
-      </View>
+      </FormSection>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionLabel}>Examples</Text>
-        <Text style={styles.sectionHint}>
-          Optional — add up to {MAX_VOCABULARY_EXAMPLES} sentences that use this word.
-        </Text>
+      <FormSection
+        title="Examples"
+        badge={
+          fields.length === 0
+            ? 'Optional'
+            : `${fields.length} of ${MAX_VOCABULARY_EXAMPLES}`
+        }
+        hint="Sentences you have seen the word in make it much easier to recall."
+      >
         {fields.map((field, index) => (
           <View key={field.id} style={styles.sectionCard}>
-            <View style={styles.exampleHeader}>
-              <Text style={styles.exampleTitle}>Example {index + 1}</Text>
-              <Pressable
-                onPress={() => remove(index)}
-                accessibilityRole="button"
+            <View style={[commonStyles.row, commonStyles.alignCenter, styles.exampleHeader]}>
+              <View style={[commonStyles.centered, styles.exampleBadge]}>
+                <Text style={styles.exampleBadgeText}>{index + 1}</Text>
+              </View>
+              <Text style={styles.exampleTitle}>Example</Text>
+              <View style={commonStyles.grow} />
+              <IconButton
+                icon="trash"
+                tone="danger"
+                onPress={() => handleRemoveExample(index)}
                 accessibilityLabel={`Remove example ${index + 1}`}
-                style={({ pressed }) => [pressed && styles.removeExamplePressed]}
-              >
-                <Text style={styles.removeExampleText}>Remove</Text>
-              </Pressable>
+              />
             </View>
 
             <Controller
@@ -169,9 +317,13 @@ export function VocabularyForm({
                   onChangeText={onChange}
                   onBlur={onBlur}
                   errorMessage={errors.examples?.[index]?.sentence?.message}
+                  placeholder="أَقْرَأُ الكِتَابَ"
                   multiline
+                  maxLength={MAX_VOCABULARY_EXAMPLE_LENGTH}
+                  autoCapitalize="none"
+                  autoCorrect={false}
                   textAlign="right"
-                  style={styles.multilineInput}
+                  style={[styles.multilineInput, styles.arabicMultilineInput]}
                 />
               )}
             />
@@ -181,137 +333,206 @@ export function VocabularyForm({
               name={`examples.${index}.meaning`}
               render={({ field: { onChange, onBlur, value } }) => (
                 <TextField
-                  label="Meaning"
+                  label="What it means"
                   value={value}
                   onChangeText={onChange}
                   onBlur={onBlur}
                   errorMessage={errors.examples?.[index]?.meaning?.message}
+                  placeholder="I am reading the book"
                   multiline
-                  style={[styles.multilineInput, styles.lastFieldInCard]}
+                  maxLength={MAX_VOCABULARY_EXAMPLE_LENGTH}
+                  style={styles.multilineInput}
                 />
               )}
             />
           </View>
         ))}
 
-        {fields.length < MAX_VOCABULARY_EXAMPLES ? (
-          <PrimaryButton
-            label="Add example"
-            variant="secondary"
+        {canAddExample ? (
+          <Pressable
             onPress={() => append({ sentence: '', meaning: '' })}
-            trailing={
-              <AppIcon
-                name="plus"
-                size={ICON_SIZES.md}
-                color={COLORS.primary}
-                weight="semibold"
-              />
-            }
-          />
-        ) : null}
-      </View>
+            accessibilityRole="button"
+            accessibilityLabel="Add example"
+            style={({ pressed }) => [
+              commonStyles.row,
+              commonStyles.centered,
+              styles.addExample,
+              pressed && styles.addExamplePressed,
+            ]}
+          >
+            <AppIcon
+              name="plus"
+              size={ICON_SIZES.md}
+              color={COLORS.primary}
+              weight="semibold"
+            />
+            <Text style={styles.addExampleLabel}>
+              {fields.length === 0 ? 'Add an example' : 'Add another example'}
+            </Text>
+          </Pressable>
+        ) : (
+          <Text style={styles.maxExamplesNote}>
+            That is the maximum of {MAX_VOCABULARY_EXAMPLES} examples.
+          </Text>
+        )}
+      </FormSection>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionLabel}>More context</Text>
+      <FormSection
+        title="Notes"
+        badge="Optional"
+        hint="Roots, grammar tips, or anything that helps the word stick."
+      >
         <View style={styles.sectionCard}>
           <Controller
             control={control}
             name="description"
             render={({ field: { onChange, onBlur, value } }) => (
               <TextField
-                label="Description"
+                label="Your notes"
                 value={value ?? ''}
                 onChangeText={onChange}
                 onBlur={onBlur}
+                placeholder="From the root ك-ت-ب, the same family as كَاتِب (writer)."
                 multiline
-                style={[styles.multilineInput, styles.lastFieldInCard]}
+                showCounter
+                maxLength={MAX_VOCABULARY_DESCRIPTION_LENGTH}
+                style={styles.multilineInput}
               />
             )}
           />
         </View>
-      </View>
+      </FormSection>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionLabel}>Image</Text>
-        <Text style={styles.sectionHint}>Optional — a visual cue can strengthen recall.</Text>
-        <Pressable
-          onPress={handleChooseImage}
-          style={({ pressed }) => [
-            styles.imagePicker,
-            imageUri ? styles.imagePickerFilled : styles.imagePickerEmpty,
-            pressed && styles.imagePickerPressed,
-          ]}
-          accessibilityRole="button"
-          accessibilityLabel={imageUri ? 'Change vocabulary image' : 'Add vocabulary image'}
-        >
-          {imageUri ? (
-            <>
-              <Image
-                source={{ uri: imageUri }}
-                style={styles.previewImage}
-                contentFit="cover"
-              />
-              <View style={[styles.changePhotoBadge, commonStyles.centered]}>
-                <Text style={styles.changePhotoText}>Change photo</Text>
-              </View>
-            </>
-          ) : (
+      <FormSection title="Image" badge="Optional" hint="A picture makes recall faster.">
+        {imageUri ? (
+          <View style={styles.imageCard}>
+            <Image
+              source={{ uri: imageUri }}
+              style={styles.previewImage}
+              contentFit="cover"
+              accessibilityLabel="Selected vocabulary image"
+            />
+            <IconButton
+              icon="xmark"
+              tone="overlay"
+              onPress={handleRemoveImage}
+              accessibilityLabel="Remove image"
+              style={styles.removeImageButton}
+            />
+            <Pressable
+              onPress={() => void handleChooseImage()}
+              accessibilityRole="button"
+              accessibilityLabel="Change image"
+              style={({ pressed }) => [
+                commonStyles.centered,
+                styles.changePhotoBadge,
+                pressed && styles.changePhotoBadgePressed,
+              ]}
+            >
+              <Text style={styles.changePhotoText}>Change photo</Text>
+            </Pressable>
+          </View>
+        ) : (
+          <Pressable
+            onPress={() => void handleChooseImage()}
+            accessibilityRole="button"
+            accessibilityLabel="Add vocabulary image"
+            style={({ pressed }) => [
+              styles.imagePicker,
+              pressed && styles.imagePickerPressed,
+            ]}
+          >
             <View style={[commonStyles.centered, styles.imagePickerPlaceholder]}>
               <View style={[commonStyles.centered, styles.imageIconWrap]}>
                 <AppIcon
                   name="photo"
-                  size={ICON_SIZES.xl}
+                  size={ICON_SIZES.xxl}
                   color={COLORS.primary}
                   weight="medium"
                 />
               </View>
-              <Text style={styles.imagePickerTitle}>Add photo</Text>
-              <Text style={styles.imagePickerSubtitle}>Tap to choose from your library</Text>
+              <Text style={styles.imagePickerTitle}>Add a photo</Text>
+              <Text style={styles.imagePickerSubtitle}>Choose one from your library</Text>
             </View>
-          )}
-        </Pressable>
-      </View>
+          </Pressable>
+        )}
+      </FormSection>
 
-      <PrimaryButton
-        label={isSubmitting ? 'Saving…' : submitLabel}
-        onPress={handleSave}
-        disabled={isSubmitting}
-        style={styles.saveButton}
-      />
-
-      {onDelete ? (
+      <View style={styles.actions}>
         <PrimaryButton
-          label="Delete Vocabulary"
-          onPress={onDelete}
-          variant="danger"
-          disabled={isSubmitting}
+          label={isSubmitting ? 'Saving…' : submitLabel}
+          onPress={() => void handleSubmit(submitValues, focusFirstInvalidField)()}
+          loading={isSubmitting}
+          accessibilityHint="Saves this word to your vocabulary list"
         />
-      ) : null}
+
+        {onDelete ? (
+          <PrimaryButton
+            label="Delete word"
+            onPress={onDelete}
+            variant="danger"
+            disabled={isSubmitting}
+            leading={
+              <AppIcon name="trash" size={ICON_SIZES.md} color={COLORS.danger} />
+            }
+          />
+        ) : null}
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   form: {
-    gap: SPACING.lg,
+    gap: SPACING.xl,
   },
-  section: {
+  previewCard: {
+    paddingHorizontal: SPACING.lg,
+    paddingTop: SPACING.md,
+    paddingBottom: SPACING.lg,
+    borderRadius: BORDER_RADIUS.hero,
+    backgroundColor: COLORS.primaryDark,
     gap: SPACING.xs,
   },
-  sectionLabel: {
-    marginLeft: SPACING.xs,
+  previewLabel: {
     fontSize: FONT_SIZES.xs,
     fontWeight: FONT_WEIGHTS.semibold,
-    color: COLORS.textMuted,
+    color: COLORS.textOnDarkCardMuted,
     textTransform: 'uppercase',
-    letterSpacing: 0.8,
+    letterSpacing: 1,
   },
-  sectionHint: {
-    marginLeft: SPACING.xs,
-    marginBottom: SPACING.xs,
+  previewArabic: {
+    fontSize: FONT_SIZES.hero,
+    fontWeight: FONT_WEIGHTS.bold,
+    color: COLORS.textOnPrimary,
+    textAlign: 'right',
+    writingDirection: 'rtl',
+    lineHeight: 42,
+  },
+  previewMeaning: {
+    fontSize: FONT_SIZES.lg,
+    color: COLORS.textOnDarkCard,
+  },
+  previewPlaceholder: {
+    opacity: 0.45,
+  },
+  errorSummary: {
+    gap: SPACING.sm,
+    padding: SPACING.md,
+    borderRadius: BORDER_RADIUS.lg,
+    borderWidth: 1,
+    borderColor: COLORS.borderDanger,
+    backgroundColor: COLORS.surfaceDanger,
+  },
+  errorSummaryTitle: {
+    fontSize: FONT_SIZES.lg,
+    fontWeight: FONT_WEIGHTS.bold,
+    color: COLORS.danger,
+  },
+  errorSummaryBody: {
+    marginTop: 2,
     fontSize: FONT_SIZES.sm,
-    color: COLORS.textMutedSecondary,
-    lineHeight: 18,
+    color: COLORS.text,
   },
   sectionCard: {
     borderRadius: BORDER_RADIUS.xxl,
@@ -320,59 +541,75 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.card,
     paddingHorizontal: SPACING.md,
     paddingTop: SPACING.md,
-    paddingBottom: SPACING.xs,
     ...formCardShadow,
   },
   arabicInput: {
     fontSize: FONT_SIZES.display,
     fontWeight: FONT_WEIGHTS.semibold,
+    writingDirection: 'rtl',
   },
   multilineInput: {
     minHeight: 88,
     textAlignVertical: 'top',
     paddingTop: SPACING.sm + 2,
   },
-  lastFieldInCard: {
-    marginBottom: SPACING.sm,
+  arabicMultilineInput: {
+    fontSize: FONT_SIZES.xxl,
+    lineHeight: 28,
+    writingDirection: 'rtl',
   },
   exampleHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: SPACING.xs,
-    paddingHorizontal: SPACING.xs,
+    gap: SPACING.sm,
+    marginBottom: SPACING.md,
+  },
+  exampleBadge: {
+    width: SIZES.stepBadge,
+    height: SIZES.stepBadge,
+    borderRadius: BORDER_RADIUS.round,
+    backgroundColor: COLORS.surfaceMuted,
+  },
+  exampleBadgeText: {
+    fontSize: FONT_SIZES.xs,
+    fontWeight: FONT_WEIGHTS.bold,
+    color: COLORS.primary,
   },
   exampleTitle: {
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.lg,
     fontWeight: FONT_WEIGHTS.semibold,
-    color: COLORS.textMuted,
+    color: COLORS.text,
   },
-  removeExampleText: {
-    fontSize: FONT_SIZES.sm,
+  addExample: {
+    gap: SPACING.sm,
+    minHeight: SIZES.primaryButtonHeight,
+    borderRadius: BORDER_RADIUS.lg,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: COLORS.addButtonBorder,
+    backgroundColor: COLORS.surfaceAddButton,
+  },
+  addExamplePressed: {
+    backgroundColor: COLORS.surfaceAddButtonPressed,
+  },
+  addExampleLabel: {
+    fontSize: FONT_SIZES.xl,
     fontWeight: FONT_WEIGHTS.semibold,
-    color: COLORS.textMuted,
+    color: COLORS.primary,
   },
-  removeExamplePressed: {
-    opacity: 0.7,
+  maxExamplesNote: {
+    paddingHorizontal: SPACING.xs,
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.textMutedSecondary,
   },
   imagePicker: {
     borderRadius: BORDER_RADIUS.xxl,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: COLORS.border,
-    backgroundColor: COLORS.card,
-    ...formCardShadow,
-  },
-  imagePickerEmpty: {
     borderStyle: 'dashed',
     borderColor: COLORS.addButtonBorder,
     backgroundColor: COLORS.surfaceAddButton,
   },
-  imagePickerFilled: {
-    minHeight: 200,
-  },
   imagePickerPressed: {
-    opacity: 0.92,
+    backgroundColor: COLORS.surfaceAddButtonPressed,
   },
   imagePickerPlaceholder: {
     minHeight: 168,
@@ -397,9 +634,22 @@ const styles = StyleSheet.create({
     color: COLORS.textMuted,
     textAlign: 'center',
   },
+  imageCard: {
+    borderRadius: BORDER_RADIUS.xxl,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.card,
+    ...formCardShadow,
+  },
   previewImage: {
     width: '100%',
-    height: 220,
+    height: SIZES.imagePreviewHeight,
+  },
+  removeImageButton: {
+    position: 'absolute',
+    top: SPACING.sm,
+    right: SPACING.sm,
   },
   changePhotoBadge: {
     position: 'absolute',
@@ -412,12 +662,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.border,
   },
+  changePhotoBadgePressed: {
+    backgroundColor: COLORS.surfacePressed,
+  },
   changePhotoText: {
     fontSize: FONT_SIZES.sm,
     fontWeight: FONT_WEIGHTS.semibold,
     color: COLORS.primary,
   },
-  saveButton: {
-    marginTop: SPACING.xs,
+  actions: {
+    gap: SPACING.sm + 2,
+    paddingTop: SPACING.xs,
   },
 });
