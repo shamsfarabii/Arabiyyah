@@ -1,6 +1,8 @@
 import {
   countVocabulary,
+  deleteAllVocabulary as deleteAllVocabularyRows,
   deleteVocabulary as deleteVocabularyRow,
+  deleteVocabularyByIds as deleteVocabularyRowsByIds,
   findRecentVocabulary,
   findVocabularyById,
   insertVocabulary,
@@ -72,4 +74,12 @@ export async function saveVocabulary(
 
 export async function removeVocabulary(id: string): Promise<void> {
   await deleteVocabularyRow(id);
+}
+
+export async function removeVocabularies(ids: string[]): Promise<number> {
+  return deleteVocabularyRowsByIds(ids);
+}
+
+export async function removeAllVocabulary(): Promise<number> {
+  return deleteAllVocabularyRows();
 }

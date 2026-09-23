@@ -1,56 +1,160 @@
-# Welcome to your Expo app 👋
+# My Arabic
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A mobile app to build and practice your Arabic vocabulary. Everything stays on your device—no account required.
+
+---
+
+## What you can do
+
+### Home
+
+- See how many words you have saved.
+- Glance at quiz progress (how many answers you’ve given and your accuracy).
+- Open the **Quiz** or **Add Vocabulary** in one tap.
+- Browse the last few words you added and jump to any of them.
+
+### Vocabulary
+
+Each word is a **card** with:
+
+- Arabic word and English meaning
+- Up to **3 example sentences** (each can have its own meaning)
+- Optional **notes** (description)
+- Optional **photo** from your gallery
+
+**List screen**
+
+- Search your collection.
+- Add a new word.
+- Open a word to read the full card.
+- **Edit** or **delete** a single word from the detail or edit screen.
+
+**Import & export**
+
+- **Export** your words to a JSON file and share it (all words or a hand-picked set).
+- **Import** a JSON file from someone else or from a backup.
+  - Choose **Skip duplicates** (same Arabic + meaning) or **Import all**.
+
+**Bulk delete**
+
+- Delete selected words, or delete everything (with a confirmation).
+- If you’re searching, “delete all” applies only to words that match the search.
+
+### Quiz
+
+- You need **at least 2 words** with **different meanings** before a quiz can start.
+- Pick how many questions (presets like 5, 10, 20, or type your own).
+- Each question shows an **Arabic word**; you pick the correct **English meaning** from multiple choices.
+- **10 seconds** per question—if time runs out, the answer counts as wrong.
+- After each answer you see whether you were right or wrong.
+- At the end you get a **score**, accuracy, and a short review of each question.
+- Words you miss often are **more likely** to appear again in future quizzes.
+- Leaving mid-quiz saves answers you already gave; the rest of that run is dropped.
+
+### First launch
+
+- On a fresh install, the app creates a local database and adds a small **starter set** of vocabulary so you can try the app immediately.
+
+### Privacy & data
+
+- **Offline first**: vocabulary and quiz history live in **SQLite** on your phone.
+- There is **no sign-in** today. Stats are tied to a single local “user” row so real accounts could be added later without breaking stored data.
+
+---
+
+## How the app is organized (for developers)
+
+Think of the flow in layers:
+
+```text
+Screens (UI)  →  Services (rules)  →  Repositories (SQL)  →  SQLite
+```
+
+| Area | Role |
+|------|------|
+| `src/app/` | Routes ([Expo Router](https://docs.expo.dev/router/introduction/)). File name = URL path. |
+| `src/features/` | Vocabulary, quiz, auth (local user), review helpers—each with screens, services, repos, types. |
+| `src/db/` | Database open, **migrations**, and **seed** data. |
+| `src/components/` | Shared UI (buttons, headers, forms). |
+| `src/constants/theme.ts` | Colors, spacing, typography tokens. |
+
+**Main routes**
+
+| Path | Screen |
+|------|--------|
+| `/` | Home |
+| `/vocabulary` | Word list |
+| `/vocabulary/new` | Add word |
+| `/vocabulary/[id]` | Word detail |
+| `/vocabulary/[id]/edit` | Edit word |
+| `/quiz` | Quiz setup |
+| `/quiz/session` | Live quiz |
+
+**Startup**
+
+1. `_layout.tsx` runs `initializeDatabase()`.
+2. Migrations bring the schema up to date (vocabulary, examples, quiz tables, etc.).
+3. Seed runs once per missing starter word.
+4. Then the router shows your screens.
+
+**Validation**
+
+- Forms use **react-hook-form** + **Zod** schemas (vocabulary and quiz settings).
+- Import files are validated against a versioned JSON export format.
+
+---
 
 ## Get started
 
-1. Install dependencies
+**Requirements:** Node.js and npm. For device builds, Android Studio and/or Xcode as needed.
+
+1. Install dependencies:
 
    ```bash
    npm install
    ```
 
-2. Start the app
+2. Start the dev server:
 
    ```bash
-   npx expo start
+   npm start
    ```
 
-In the output, you'll find options to open the app in a
+   Then open **iOS simulator**, **Android emulator**, or **Expo Go** from the menu.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+**Other useful commands**
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+| Command | What it does |
+|---------|----------------|
+| `npm run android` | Run on Android (native) |
+| `npm run ios` | Run on iOS (native) |
+| `npm run web` | Run in the browser |
+| `npm run lint` | ESLint |
+| `npm run build:apk` | Local release APK (Android prebuild + Gradle) |
 
-## Get a fresh project
+**EAS (cloud builds)** — profiles live in `eas.json` (`development`, `preview`, `production`). Use the [EAS CLI](https://docs.expo.dev/build/introduction/) when you want builds outside your machine.
 
-When you're ready, run:
+---
 
-```bash
-npm run reset-project
-```
+## Typical learning workflow (using the app)
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+1. **Add words** from Home or the vocabulary list (or **import** a shared JSON file).
+2. **Review cards** on the detail screen when you want context, examples, or a photo.
+3. **Take a quiz** when you have at least two distinct meanings in your list.
+4. **Export** your collection to back up or share with another device/user.
+5. Repeat—quizzes gradually favor words you still struggle with.
 
-### Other setup steps
+---
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+## Tech stack (short)
 
-## Learn more
+- [Expo](https://expo.dev) ~57, [React Native](https://reactnative.dev), [Expo Router](https://docs.expo.dev/router/introduction/)
+- [expo-sqlite](https://docs.expo.dev/versions/latest/sdk/sqlite/) for local storage
+- TypeScript, Zod, react-hook-form
+- Document picker, file system, sharing, and image picker for import/export and photos
 
-To learn more about developing your project with Expo, look at the following resources:
+---
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## License
 
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+See [LICENSE](./LICENSE).
