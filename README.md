@@ -1,4 +1,4 @@
-# My Arabic
+# Lugati
 
 A mobile app to build and practice your Arabic vocabulary. Everything stays on your device—no account required.
 
@@ -108,7 +108,7 @@ Screens (UI)  →  Services (rules)  →  Repositories (SQL)  →  SQLite
 
 Anyone can install the latest Android build from GitHub—no account required in the app itself.
 
-- **Latest APK:** [github.com/shamsfarabii/Arabiyyah/releases/latest/download/my-arabic.apk](https://github.com/shamsfarabii/Arabiyyah/releases/latest/download/my-arabic.apk)
+- **Latest APK:** [github.com/shamsfarabii/Arabiyyah/releases/latest/download/Lugati.apk](https://github.com/shamsfarabii/Arabiyyah/releases/latest/download/Lugati.apk)
 - **All releases:** [github.com/shamsfarabii/Arabiyyah/releases/latest](https://github.com/shamsfarabii/Arabiyyah/releases/latest)
 
 Inside the app, open **Settings** for the same download links.

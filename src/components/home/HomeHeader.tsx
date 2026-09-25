@@ -23,7 +23,7 @@ export function HomeHeader({ isCompact }: HomeHeaderProps) {
           maxFontSizeMultiplier={HOME_MAX_FONT_SCALE}
           numberOfLines={1}
         >
-          My Arabic
+          Lugati
         </Text>
         <Text style={styles.subtitle} maxFontSizeMultiplier={HOME_MAX_FONT_SCALE}>
           Keep learning, one word at a time.

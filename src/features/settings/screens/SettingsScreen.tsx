@@ -91,7 +91,7 @@ export function SettingsScreen() {
 
       <FormSection
         title="Android app"
-        hint="Install or update My Arabic outside the Play Store."
+        hint="Install or update Lugati outside the Play Store."
       >
         <View style={styles.card}>
           <View style={[commonStyles.row, styles.cardHeader]}>

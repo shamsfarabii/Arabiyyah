@@ -18,7 +18,7 @@ import { createVocabulary } from '@/features/vocabulary/services/vocabularyServi
 import type { Vocabulary } from '@/features/vocabulary/types';
 import { toIsoNow } from '@/utils/dates';
 
-const EXPORT_APP_ID = 'my-arabic' as const;
+const EXPORT_APP_ID = 'lugati' as const;
 const EXPORT_FORMAT_VERSION = 1 as const;
 
 export type ImportDuplicateStrategy = 'skip' | 'import';
@@ -68,7 +68,7 @@ export async function loadVocabularyForExport(ids?: string[]): Promise<Vocabular
 
 function buildExportFileName(exportedAt: string): string {
   const datePart = exportedAt.slice(0, 10);
-  return `my-arabic-vocabulary-${datePart}.json`;
+  return `lugati-vocabulary-${datePart}.json`;
 }
 
 export async function shareVocabularyExport(vocabularies: Vocabulary[]): Promise<void> {

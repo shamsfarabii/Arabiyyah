@@ -48,12 +48,12 @@ jobs:
         run: npm run build:apk
 
       - name: Prepare release asset
-        run: cp android/app/build/outputs/apk/release/app-release.apk my-arabic.apk
+        run: cp android/app/build/outputs/apk/release/app-release.apk Lugati.apk
 
       - name: Publish GitHub release
         uses: softprops/action-gh-release@v2
         with:
-          files: my-arabic.apk
+          files: Lugati.apk
           generate_release_notes: true
           tag_name: ${{ github.ref_name }}
           name: ${{ github.ref_name }}
@@ -64,6 +64,6 @@ jobs:
         with:
           tag_name: manual-${{ github.run_number }}
           name: Manual build ${{ github.run_number }}
-          files: my-arabic.apk
+          files: Lugati.apk
           generate_release_notes: true
         if: github.event_name == 'workflow_dispatch'

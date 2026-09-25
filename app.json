@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "my-arabic",
-    "slug": "my-arabic",
+    "name": "Lugati",
+    "slug": "lugati",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "myarabic",
+    "scheme": "lugati",
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/expo.icon"
@@ -29,7 +29,7 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Allow My Arabic to access your photos for vocabulary images."
+          "photosPermission": "Allow Lugati to access your photos for vocabulary images."
         }
       ],
       [

@@ -20,7 +20,7 @@ export const vocabularyExportItemSchema = z.object({
 
 export const vocabularyExportFileSchema = z.object({
   formatVersion: z.literal(1),
-  app: z.literal('my-arabic'),
+  app: z.enum(['lugati', 'my-arabic']),
   exportedAt: z.string().datetime(),
   items: z.array(vocabularyExportItemSchema).min(1),
 });
