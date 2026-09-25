@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 
 import { AppIcon } from '@/components/ui/AppIcon';
+import { IconButton } from '@/components/ui/IconButton';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { ScreenScaffold } from '@/components/ui/ScreenScaffold';
@@ -346,8 +347,18 @@ export function VocabularyListScreen() {
     );
   };
 
+
+  const isAllSelected = items.length > 0 && selectedCount === items.length;
+
+  const toggleSelectAll = useCallback(() => {
+    setSelectedIds(isAllSelected ? new Set() : new Set(items.map((item) => item.id)));
+  }, [isAllSelected, items]);
+
   const headerTitle = isSelectionMode ? 'Select words' : 'Vocabulary';
   const isBusy = isShareBusy || isImportBusy || isDeleteBusy;
+  const trimmedQuery = searchQuery.trim();
+  const isSearching = trimmedQuery.length > 0;
+  const countLabel = `${items.length} ${isSearching ? 'result' : 'word'}${items.length === 1 ? '' : 's'}`;
 
   const headerRight = useMemo(() => {
     if (isSelectionMode) {
@@ -366,14 +377,18 @@ export function VocabularyListScreen() {
     return (
       <Pressable
         onPress={() => router.push('/vocabulary/new')}
-        style={({ pressed }) => [styles.addIconButton, pressed && styles.pressed]}
+        style={({ pressed }) => [
+          styles.addIconButton,
+          commonStyles.centered,
+          pressed && styles.addIconButtonPressed,
+        ]}
         accessibilityRole="button"
         accessibilityLabel="Add vocabulary"
       >
         <AppIcon
           name="plus"
           size={ICON_SIZES.lg}
-          color={COLORS.primary}
+          color={COLORS.textOnPrimary}
           weight="bold"
         />
       </Pressable>
@@ -386,11 +401,9 @@ export function VocabularyListScreen() {
         title={headerTitle}
         subtitle={
           isSelectionMode
-            ? selectedCount === 0
-              ? selectionPurpose === 'delete'
-                ? 'Tap words to delete.'
-                : 'Tap words to include in your export.'
-              : `${selectedCount} selected`
+            ? selectionPurpose === 'delete'
+              ? 'Tap words to mark them for deletion.'
+              : 'Tap words to include in your export.'
             : undefined
         }
         onBack={() => {
@@ -404,81 +417,94 @@ export function VocabularyListScreen() {
       />
 
       {!isSelectionMode ? (
-        <>
+        <View style={[commonStyles.row, commonStyles.alignCenter, styles.searchBar]}>
+          <AppIcon name="search" size={ICON_SIZES.sm} color={COLORS.textMuted} weight="semibold" />
           <TextInput
             value={searchQuery}
             onChangeText={setSearchQuery}
-            placeholder="Search..."
-            placeholderTextColor={COLORS.textMuted}
+            placeholder="Search Arabic or meaning"
+            placeholderTextColor={COLORS.textMutedSecondary}
+            selectionColor={COLORS.primary}
             style={styles.searchInput}
             autoCorrect={false}
+            autoCapitalize="none"
+            returnKeyType="search"
+            accessibilityLabel="Search vocabulary"
           />
-          <View style={styles.collectionActions}>
+          {isSearching ? (
             <Pressable
-              onPress={handleImport}
-              disabled={isImportBusy}
-              style={({ pressed }) => [
-                styles.collectionActionButton,
-                isImportBusy && styles.collectionActionDisabled,
-                pressed && !isImportBusy && styles.collectionActionPressed,
-              ]}
+              onPress={() => setSearchQuery('')}
+              hitSlop={10}
               accessibilityRole="button"
-              accessibilityLabel="Import vocabulary from file"
+              accessibilityLabel="Clear search"
+              style={({ pressed }) => pressed && styles.pressed}
             >
               <AppIcon
-                name="importDoc"
+                name="xmarkCircle"
                 size={ICON_SIZES.md}
-                color={COLORS.primary}
-                weight="bold"
+                color={COLORS.chevron}
+                weight="regular"
               />
-              <Text style={styles.collectionActionLabel}>Import</Text>
             </Pressable>
-            <Pressable
-              onPress={openExportMenu}
-              disabled={isShareBusy}
-              style={({ pressed }) => [
-                styles.collectionActionButton,
-                isShareBusy && styles.collectionActionDisabled,
-                pressed && !isShareBusy && styles.collectionActionPressed,
-              ]}
-              accessibilityRole="button"
-              accessibilityLabel="Export vocabulary to file"
-            >
-              <AppIcon
-                name="share"
-                size={ICON_SIZES.md}
-                color={COLORS.primary}
-                weight="bold"
-              />
-              <Text style={styles.collectionActionLabel}>Export</Text>
-            </Pressable>
-            <Pressable
-              onPress={openDeleteMenu}
-              disabled={isDeleteBusy}
-              style={({ pressed }) => [
-                styles.collectionActionButton,
-                isDeleteBusy && styles.collectionActionDisabled,
-                pressed && !isDeleteBusy && styles.collectionActionPressed,
-              ]}
-              accessibilityRole="button"
-              accessibilityLabel="Delete vocabulary"
-            >
-              <AppIcon
-                name="trash"
-                size={ICON_SIZES.md}
-                color={COLORS.danger}
-                weight="bold"
-              />
-              <Text style={[styles.collectionActionLabel, styles.collectionActionLabelDanger]}>
-                Delete
-              </Text>
-            </Pressable>
-          </View>
-        </>
+          ) : null}
+        </View>
       ) : null}
 
+      <View style={[commonStyles.row, commonStyles.alignCenter, styles.toolbar]}>
+        {isSelectionMode ? (
+          <>
+            <Text style={styles.toolbarLabel}>
+              {selectedCount} of {items.length} selected
+            </Text>
+            <View style={commonStyles.grow} />
+            <Pressable
+              onPress={toggleSelectAll}
+              disabled={items.length === 0}
+              hitSlop={8}
+              accessibilityRole="button"
+              style={({ pressed }) => pressed && styles.pressed}
+            >
+              <Text style={styles.toolbarLink}>
+                {isAllSelected ? 'Deselect all' : 'Select all'}
+              </Text>
+            </Pressable>
+          </>
+        ) : (
+          <>
+            <Text style={styles.toolbarLabel}>
+              {isLoading && items.length === 0 ? ' ' : countLabel}
+            </Text>
+            <View style={commonStyles.grow} />
+            <View style={[commonStyles.row, styles.toolbarActions]}>
+              <IconButton
+                icon="importDoc"
+                onPress={handleImport}
+                disabled={isImportBusy}
+                accessibilityLabel="Import vocabulary from file"
+                style={styles.toolbarButton}
+              />
+              <IconButton
+                icon="share"
+                onPress={openExportMenu}
+                disabled={isShareBusy}
+                accessibilityLabel="Export vocabulary to file"
+                style={styles.toolbarButton}
+              />
+              <IconButton
+                icon="trash"
+                tone="danger"
+                onPress={openDeleteMenu}
+                disabled={isDeleteBusy}
+                accessibilityLabel="Delete vocabulary"
+                style={styles.toolbarButton}
+              />
+            </View>
+          </>
+        )}
+      </View>
+
       {isBusy ? (
-        <View style={styles.busyBanner}>
+        <View style={[commonStyles.row, commonStyles.alignCenter, styles.busyBanner]}>
           <ActivityIndicator color={COLORS.primary} size="small" />
           <Text style={styles.busyBannerText}>
             {isShareBusy ? 'Preparing export…' : isImportBusy ? 'Importing…' : 'Deleting…'}
@@ -486,7 +512,7 @@ export function VocabularyListScreen() {
         </View>
       ) : null}
 
-      {isLoading ? (
+      {isLoading && items.length === 0 ? (
         <View style={[commonStyles.grow, commonStyles.centered]}>
           <ActivityIndicator color={COLORS.primary} />
         </View>
@@ -494,28 +520,70 @@ export function VocabularyListScreen() {
 
       {!isLoading && loadError ? (
         <View style={styles.emptyState}>
+          <View style={[styles.emptyIcon, styles.emptyIconDanger, commonStyles.centered]}>
+            <AppIcon name="warning" size={ICON_SIZES.xxl} color={COLORS.danger} />
+          </View>
           <Text style={styles.emptyTitle}>Could not load vocabulary</Text>
           <Text style={styles.emptyBody}>{loadError}</Text>
-          <Pressable onPress={() => void loadItems(searchQuery)}>
-            <Text style={styles.retryLink}>Try again</Text>
-          </Pressable>
-        </View>
-      ) : null}
-
-      {!isLoading && !loadError && items.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyTitle}>No vocabulary yet</Text>
-          <Text style={styles.emptyBody}>Add your first word or import a shared collection.</Text>
           <PrimaryButton
-            label="Import from file"
-            onPress={handleImport}
+            label="Try again"
             variant="secondary"
-            style={styles.emptyImportButton}
+            onPress={() => void loadItems(searchQuery)}
+            style={styles.emptyButton}
           />
         </View>
       ) : null}
 
-      {!isLoading && !loadError && items.length > 0 ? (
+      {!isLoading && !loadError && items.length === 0 && isSearching ? (
+        <View style={styles.emptyState}>
+          <View style={[styles.emptyIcon, commonStyles.centered]}>
+            <AppIcon name="search" size={ICON_SIZES.xxl} color={COLORS.primary} />
+          </View>
+          <Text style={styles.emptyTitle}>No matches</Text>
+          <Text style={styles.emptyBody}>
+            Nothing in your collection matches “{trimmedQuery}”.
+          </Text>
+          <Pressable
+            onPress={() => setSearchQuery('')}
+            hitSlop={8}
+            accessibilityRole="button"
+            style={({ pressed }) => pressed && styles.pressed}
+          >
+            <Text style={styles.emptyLink}>Clear search</Text>
+          </Pressable>
+        </View>
+      ) : null}
+
+      {!isLoading && !loadError && items.length === 0 && !isSearching ? (
+        <View style={styles.emptyState}>
+          <View style={[styles.emptyIcon, commonStyles.centered]}>
+            <AppIcon name="book" size={ICON_SIZES.xxl} color={COLORS.primary} />
+          </View>
+          <Text style={styles.emptyTitle}>No vocabulary yet</Text>
+          <Text style={styles.emptyBody}>
+            Add your first word, or import a collection someone shared with you.
+          </Text>
+          <PrimaryButton
+            label="Add a word"
+            onPress={() => router.push('/vocabulary/new')}
+            leading={
+              <AppIcon name="plus" size={ICON_SIZES.md} color={COLORS.textOnPrimary} weight="bold" />
+            }
+            style={styles.emptyButton}
+          />
+          <PrimaryButton
+            label="Import from file"
+            onPress={handleImport}
+            variant="secondary"
+            leading={
+              <AppIcon name="importDoc" size={ICON_SIZES.md} color={COLORS.primary} weight="bold" />
+            }
+            style={styles.emptyButtonSecondary}
+          />
+        </View>
+      ) : null}
+
+      {!loadError && items.length > 0 ? (
         <ScrollView
           style={styles.listScroll}
           contentContainerStyle={[
@@ -523,11 +591,13 @@ export function VocabularyListScreen() {
             isSelectionMode && styles.listContentWithFooter,
           ]}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.list}>
             {items.map((item, index) => {
               const isSelected = selectedIds.has(item.id);
+              const details = describeVocabularyDetails(item);
 
               return (
                 <Pressable
@@ -544,29 +614,57 @@ export function VocabularyListScreen() {
                       handleDelete(item);
                     }
                   }}
+                  accessibilityRole={isSelectionMode ? 'checkbox' : 'button'}
+                  accessibilityState={isSelectionMode ? { checked: isSelected } : undefined}
+                  accessibilityLabel={`${item.meaning}, ${item.arabicWord}`}
+                  accessibilityHint={isSelectionMode ? undefined : 'Long press to delete'}
                   style={({ pressed }) => [
                     styles.row,
+                    commonStyles.row,
+                    commonStyles.alignCenter,
                     index !== items.length - 1 && styles.rowBorder,
-                    pressed && styles.rowPressed,
                     isSelectionMode && isSelected && styles.rowSelected,
+                    pressed && styles.rowPressed,
                   ]}
                 >
                   {isSelectionMode ? (
                     <AppIcon
                       name={isSelected ? 'checkmarkCircle' : 'circle'}
-                      size={ICON_SIZES.lg}
-                      color={isSelected ? COLORS.primary : COLORS.textMuted}
-                      weight="bold"
+                      size={ICON_SIZES.xl}
+                      color={
+                        isSelected
+                          ? selectionPurpose === 'delete'
+                            ? COLORS.danger
+                            : COLORS.primary
+                          : COLORS.chevron
+                      }
+                      weight="semibold"
                     />
                   ) : null}
-                  <View style={[styles.entryTextRow, isSelectionMode && styles.entryTextRowCompact]}>
+
+                  <View style={styles.rowText}>
                     <Text style={styles.meaning} numberOfLines={1}>
                       {item.meaning}
                     </Text>
-                    <Text style={styles.arabicWord} numberOfLines={1}>
-                      {item.arabicWord}
-                    </Text>
+                    {details ? (
+                      <Text style={styles.rowMeta} numberOfLines={1}>
+                        {details}
+                      </Text>
+                    ) : null}
                   </View>
+
+                  <Text style={styles.arabicWord} numberOfLines={1}>
+                    {item.arabicWord}
+                  </Text>
+
+                  {!isSelectionMode ? (
+                    <AppIcon
+                      name="chevronRight"
+                      size={ICON_SIZES.sm - 2}
+                      color={COLORS.chevron}
+                      weight="bold"
+                    />
+                  ) : null}
                 </Pressable>
               );
             })}
@@ -586,6 +684,9 @@ export function VocabularyListScreen() {
               variant="danger"
               onPress={confirmDeleteSelected}
               disabled={isDeleteBusy || selectedCount === 0}
+              leading={
+                <AppIcon name="trash" size={ICON_SIZES.md} color={COLORS.danger} weight="bold" />
+              }
             />
           ) : (
             <PrimaryButton
@@ -602,12 +703,33 @@ export function VocabularyListScreen() {
                 void runExport(Array.from(selectedIds));
               }}
               disabled={isShareBusy || selectedCount === 0}
+              leading={
+                <AppIcon name="share" size={ICON_SIZES.md} color={COLORS.textOnPrimary} weight="bold" />
+              }
             />
           )}
         </View>
       ) : null}
     </ScreenScaffold>
   );
+}
+
+/** Summarises the optional study material attached to a word, e.g. "2 examples · Notes". */
+function describeVocabularyDetails(item: Vocabulary): string {
+  const parts: string[] = [];
+  const exampleCount = item.examples.length;
+
+  if (exampleCount > 0) {
+    parts.push(`${exampleCount} example${exampleCount === 1 ? '' : 's'}`);
+  }
+  if (item.description?.trim()) {
+    parts.push('Notes');
+  }
+  if (item.imageUri?.trim()) {
+    parts.push('Image');
+  }
+
+  return parts.join(' · ');
 }
 
 const listShadow = createShadow(2, COLORS.accent, 0.06, 4);
@@ -624,80 +746,79 @@ const styles = StyleSheet.create({
     fontWeight: FONT_WEIGHTS.semibold,
     color: COLORS.primary,
   },
-  headerActionDisabled: {
-    opacity: 0.5,
+  addIconButton: {
+    width: SIZES.headerIconButton,
+    height: SIZES.headerIconButton,
+    borderRadius: BORDER_RADIUS.sm,
+    backgroundColor: COLORS.primary,
   },
-  collectionActions: {
-    flexDirection: 'row',
+  addIconButtonPressed: {
+    backgroundColor: COLORS.primaryDark,
+  },
+  pressed: {
+    opacity: 0.6,
+  },
+  searchBar: {
+    minHeight: 46,
+    paddingHorizontal: SPACING.md - 2,
     gap: SPACING.sm,
-    marginBottom: SPACING.md,
-  },
-  collectionActionButton: {
-    flex: 1,
-    minHeight: 44,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: SPACING.xs,
-    borderRadius: BORDER_RADIUS.lg,
     borderWidth: 1,
     borderColor: COLORS.border,
+    borderRadius: BORDER_RADIUS.lg,
     backgroundColor: COLORS.card,
   },
-  collectionActionPressed: {
-    backgroundColor: COLORS.surfacePressed,
+  searchInput: {
+    flex: 1,
+    minWidth: 0,
+    paddingVertical: SPACING.sm + 2,
+    fontSize: FONT_SIZES.lg,
+    color: COLORS.text,
   },
-  collectionActionDisabled: {
-    opacity: 0.5,
+  toolbar: {
+    minHeight: SIZES.iconButton + SPACING.md,
+    marginTop: SPACING.sm,
+    marginBottom: SPACING.xs,
+    paddingHorizontal: SPACING.xs,
   },
-  collectionActionLabel: {
+  toolbarLabel: {
+    fontSize: FONT_SIZES.sm,
+    fontWeight: FONT_WEIGHTS.semibold,
+    color: COLORS.textMuted,
+    letterSpacing: 0.2,
+    fontVariant: ['tabular-nums'],
+  },
+  toolbarLink: {
     fontSize: FONT_SIZES.md,
     fontWeight: FONT_WEIGHTS.semibold,
     color: COLORS.primary,
   },
-  collectionActionLabelDanger: {
-    color: COLORS.danger,
+  toolbarActions: {
+    gap: SPACING.sm,
   },
-  addIconButton: {
-    width: SIZES.headerIconButton,
-    height: SIZES.headerIconButton,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: BORDER_RADIUS.sm,
-    backgroundColor: COLORS.card,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  pressed: {
-    opacity: 0.7,
+  toolbarButton: {
+    width: 36,
+    height: 36,
   },
   busyBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    alignSelf: 'flex-start',
     gap: SPACING.sm,
     marginBottom: SPACING.sm,
-    paddingVertical: SPACING.xs,
+    paddingHorizontal: SPACING.md - 4,
+    paddingVertical: SPACING.xs + 2,
+    borderRadius: BORDER_RADIUS.round,
+    backgroundColor: COLORS.surfaceMuted,
   },
   busyBannerText: {
-    fontSize: FONT_SIZES.md,
-    color: COLORS.textMuted,
-  },
-  searchInput: {
-    minHeight: 48,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: BORDER_RADIUS.lg,
-    paddingHorizontal: SPACING.md,
-    marginBottom: SPACING.sm,
-    fontSize: FONT_SIZES.xl,
-    color: COLORS.text,
-    backgroundColor: COLORS.card,
+    fontSize: FONT_SIZES.sm,
+    fontWeight: FONT_WEIGHTS.medium,
+    color: COLORS.primary,
   },
   listScroll: {
     flex: 1,
   },
   listContent: {
-    flexGrow: 0,
+    paddingTop: SPACING.xs,
+    paddingBottom: SPACING.md,
   },
   listContentWithFooter: {
     paddingBottom: SPACING.xl,
@@ -711,13 +832,10 @@ const styles = StyleSheet.create({
     ...listShadow,
   },
   row: {
-    minHeight: 72,
+    minHeight: SIZES.wordRowMinHeight - 4,
     paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    alignSelf: 'stretch',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.sm,
+    paddingVertical: SPACING.sm + 2,
+    gap: SPACING.md - 4,
   },
   rowBorder: {
     borderBottomWidth: 1,
@@ -729,56 +847,69 @@ const styles = StyleSheet.create({
   rowSelected: {
     backgroundColor: COLORS.surfaceMuted,
   },
-  entryTextRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    alignSelf: 'stretch',
-    gap: SPACING.md,
+  rowText: {
+    flex: 1,
     minWidth: 0,
-    flex: 1,
+    gap: 2,
   },
-  entryTextRowCompact: {
-    flex: 1,
+  meaning: {
+    fontSize: FONT_SIZES.xl,
+    fontWeight: FONT_WEIGHTS.semibold,
+    color: COLORS.text,
+  },
+  rowMeta: {
+    fontSize: FONT_SIZES.xs,
+    fontWeight: FONT_WEIGHTS.medium,
+    color: COLORS.textMutedSecondary,
   },
   arabicWord: {
-    flexShrink: 0,
-    fontSize: FONT_SIZES.display,
+    flexShrink: 1,
+    maxWidth: '50%',
+    fontSize: FONT_SIZES.display - 2,
     fontWeight: FONT_WEIGHTS.semibold,
     color: COLORS.arabicWord,
     textAlign: 'right',
-  },
-  meaning: {
-    flex: 1,
-    flexShrink: 1,
-    fontSize: FONT_SIZES.display,
-    fontWeight: FONT_WEIGHTS.semibold,
-    color: COLORS.textMutedSecondary,
-    textAlign: 'left',
+    writingDirection: 'rtl',
   },
   emptyState: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: SPACING.lg,
+    paddingBottom: SPACING.section,
   },
-  emptyImportButton: {
-    marginTop: SPACING.lg,
-    alignSelf: 'stretch',
-    maxWidth: 320,
+  emptyIcon: {
+    width: 64,
+    height: 64,
+    marginBottom: SPACING.md,
+    borderRadius: BORDER_RADIUS.xxl,
+    backgroundColor: COLORS.surfaceMuted,
+  },
+  emptyIconDanger: {
+    backgroundColor: COLORS.surfaceDanger,
   },
   emptyTitle: {
-    fontSize: FONT_SIZES.xxl,
+    fontSize: FONT_SIZES.xxxl,
     fontWeight: FONT_WEIGHTS.bold,
     color: COLORS.text,
-    marginBottom: SPACING.xs,
+    marginBottom: SPACING.xs + 2,
   },
   emptyBody: {
+    maxWidth: 300,
     fontSize: FONT_SIZES.md,
+    lineHeight: 20,
     color: COLORS.textMuted,
     textAlign: 'center',
   },
-  retryLink: {
+  emptyButton: {
+    marginTop: SPACING.lg,
+    alignSelf: 'stretch',
+  },
+  emptyButtonSecondary: {
+    marginTop: SPACING.sm,
+    alignSelf: 'stretch',
+  },
+  emptyLink: {
     marginTop: SPACING.md,
     fontSize: FONT_SIZES.md,
     fontWeight: FONT_WEIGHTS.semibold,

@@ -104,6 +104,19 @@ Screens (UI)  →  Services (rules)  →  Repositories (SQL)  →  SQLite
 
 ---
 
+## Download the Android app (APK)
+
+Anyone can install the latest Android build from GitHub—no account required in the app itself.
+
+- **Latest APK:** [github.com/shamsfarabii/Arabiyyah/releases/latest/download/my-arabic.apk](https://github.com/shamsfarabii/Arabiyyah/releases/latest/download/my-arabic.apk)
+- **All releases:** [github.com/shamsfarabii/Arabiyyah/releases/latest](https://github.com/shamsfarabii/Arabiyyah/releases/latest)
+
+Inside the app, open **Settings** for the same download links.
+
+Maintainers: push a version tag such as `v1.0.1`, or run the **Release APK** workflow manually, to publish a new GitHub release with the `my-arabic.apk` asset.
+
+---
+
 ## Get started
 
 **Requirements:** Node.js and npm. For device builds, Android Studio and/or Xcode as needed.

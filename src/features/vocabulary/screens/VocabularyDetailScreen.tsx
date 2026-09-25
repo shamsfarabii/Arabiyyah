@@ -1,7 +1,9 @@
 import { Image } from 'expo-image';
+import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { BodyText, Subheading } from '@/components/StyledText';
+import { AppIcon, type AppIconName } from '@/components/ui/AppIcon';
+import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { ScreenScaffold } from '@/components/ui/ScreenScaffold';
 import {
@@ -9,11 +11,14 @@ import {
   COLORS,
   FONT_SIZES,
   FONT_WEIGHTS,
+  ICON_SIZES,
+  SIZES,
   SPACING,
 } from '@/constants/theme';
 import { MAX_VOCABULARY_EXAMPLES } from '@/features/vocabulary/constants';
 import type { Vocabulary } from '@/features/vocabulary/types';
 import { createShadow } from '@/helpers/styleHelpers';
+import { commonStyles } from '@/styles/commonStyles';
 
 type VocabularyDetailScreenProps = {
   vocabulary: Vocabulary;
@@ -22,8 +27,9 @@ type VocabularyDetailScreenProps = {
 };
 
 const cardShadow = createShadow(2, COLORS.accent, 0.06, 4);
+const heroShadow = createShadow(6, COLORS.accent, 0.18, 12);
 
-function formatAddedDate(isoDate: string): string {
+function formatDate(isoDate: string): string {
   const date = new Date(isoDate);
   if (Number.isNaN(date.getTime())) {
     return '';
@@ -33,6 +39,28 @@ function formatAddedDate(isoDate: string): string {
     day: 'numeric',
     year: 'numeric',
   });
+}
+
+type SectionProps = {
+  icon: AppIconName;
+  title: string;
+  count?: number;
+  children: ReactNode;
+};
+
+function Section({ icon, title, count, children }: SectionProps) {
+  return (
+    <View style={styles.section}>
+      <View style={[commonStyles.row, commonStyles.alignCenter, styles.sectionHeader]}>
+        <AppIcon name={icon} size={ICON_SIZES.sm - 2} color={COLORS.textMuted} weight="semibold" />
+        <Text style={styles.sectionTitle} accessibilityRole="header">
+          {title}
+        </Text>
+        {typeof count === 'number' ? <Text style={styles.sectionCount}>{count}</Text> : null}
+      </View>
+      {children}
+    </View>
+  );
 }
 
 export function VocabularyDetailScreen({
@@ -45,56 +73,76 @@ export function VocabularyDetailScreen({
   const hasDescription = Boolean(vocabulary.description?.trim());
   const hasImage = Boolean(vocabulary.imageUri?.trim());
 
+  const addedOn = formatDate(vocabulary.createdAt);
+  const updatedOn = formatDate(vocabulary.updatedAt);
+  const showUpdated = Boolean(updatedOn) && updatedOn !== addedOn;
+
   return (
     <ScreenScaffold contentContainerStyle={styles.scaffoldContent}>
       <ScreenHeader
-        title="Vocabulary"
+        title="Word"
         onBack={onBack}
         rightAction={
           <Pressable
             onPress={onEdit}
-            style={({ pressed }) => [styles.editHeaderButton, pressed && styles.editHeaderPressed]}
+            style={({ pressed }) => [
+              styles.editHeaderButton,
+              commonStyles.centered,
+              pressed && styles.editHeaderPressed,
+            ]}
             accessibilityRole="button"
             accessibilityLabel="Edit vocabulary"
           >
-            <Text style={styles.editHeaderLabel}>Edit</Text>
+            <AppIcon name="pencil" size={ICON_SIZES.md} color={COLORS.primary} weight="bold" />
           </Pressable>
         }
       />
 
       <View style={styles.heroCard}>
-        <Text style={styles.heroArabic}>{vocabulary.arabicWord}</Text>
+        <View style={styles.heroDecoration} pointerEvents="none" />
+        <View style={[styles.heroDecoration, styles.heroDecorationSmall]} pointerEvents="none" />
+
+        <Text style={styles.heroArabic} accessibilityLanguage="ar">
+          {vocabulary.arabicWord}
+        </Text>
+        <View style={styles.heroDivider} />
         <Text style={styles.heroMeaning}>{vocabulary.meaning}</Text>
+
+        {addedOn ? (
+          <View style={[commonStyles.row, commonStyles.centered, styles.heroMetaRow]}>
+            <AppIcon
+              name="calendar"
+              size={ICON_SIZES.sm - 4}
+              color={COLORS.textOnDarkCardMuted}
+              weight="semibold"
+            />
+            <Text style={styles.heroMeta}>
+              Added {addedOn}
+              {showUpdated ? `  ·  Updated ${updatedOn}` : ''}
+            </Text>
+          </View>
+        ) : null}
       </View>
 
-      {hasImage ? (
-        <View style={styles.section}>
-          <Subheading style={styles.sectionTitle}>Image</Subheading>
-          <View style={styles.imageCard}>
-            <Image
-              source={{ uri: vocabulary.imageUri }}
-              style={styles.image}
-              contentFit="cover"
-              accessibilityLabel="Vocabulary image"
-            />
-          </View>
-        </View>
-      ) : null}
-
       {hasExamples ? (
-        <View style={styles.section}>
-          <Subheading style={styles.sectionTitle}>Examples</Subheading>
-          <View style={styles.examplesCard}>
+        <Section icon="quote" title="Examples" count={displayExamples.length}>
+          <View style={styles.card}>
             {displayExamples.map((example, index) => (
               <View
                 key={`${index}-${example.sentence}`}
                 style={[
+                  commonStyles.row,
                   styles.exampleRow,
                   index !== displayExamples.length - 1 && styles.exampleRowBorder,
                 ]}
               >
+                <View style={[styles.exampleBadge, commonStyles.centered]}>
+                  <Text style={styles.exampleBadgeText}>{index + 1}</Text>
+                </View>
                 <View style={styles.exampleContent}>
-                  <Text style={styles.exampleSentence}>{example.sentence}</Text>
+                  <Text style={styles.exampleSentence} accessibilityLanguage="ar">
+                    {example.sentence}
+                  </Text>
                   {example.meaning?.trim() ? (
                     <Text style={styles.exampleMeaning}>{example.meaning}</Text>
                   ) : null}
@@ -102,23 +150,49 @@ export function VocabularyDetailScreen({
               </View>
             ))}
           </View>
-        </View>
+        </Section>
       ) : null}
 
       {hasDescription ? (
-        <View style={styles.section}>
-          <Subheading style={styles.sectionTitle}>Notes</Subheading>
-          <View style={styles.notesCard}>
-            <BodyText style={styles.notesText}>{vocabulary.description}</BodyText>
+        <Section icon="notes" title="Notes">
+          <View style={[styles.card, styles.notesCard]}>
+            <Text style={styles.notesText}>{vocabulary.description}</Text>
           </View>
-        </View>
+        </Section>
+      ) : null}
+
+      {hasImage ? (
+        <Section icon="photo" title="Image">
+          <View style={styles.card}>
+            <Image
+              source={{ uri: vocabulary.imageUri }}
+              style={styles.image}
+              contentFit="cover"
+              transition={150}
+              accessibilityLabel={`Image for ${vocabulary.meaning}`}
+            />
+          </View>
+        </Section>
       ) : null}
 
       {!hasExamples && !hasDescription && !hasImage ? (
-        <View style={styles.hintCard}>
-          <BodyText style={styles.hintText}>
-            Tap Edit to add examples, notes, or an image to help you remember this word.
-          </BodyText>
+        <View style={styles.emptyCard}>
+          <View style={[styles.emptyIcon, commonStyles.centered]}>
+            <AppIcon name="notes" size={ICON_SIZES.xl} color={COLORS.primary} />
+          </View>
+          <Text style={styles.emptyTitle}>Make it memorable</Text>
+          <Text style={styles.emptyBody}>
+            Add example sentences, notes, or an image to help this word stick.
+          </Text>
+          <PrimaryButton
+            label="Add details"
+            variant="secondary"
+            onPress={onEdit}
+            leading={
+              <AppIcon name="plus" size={ICON_SIZES.md} color={COLORS.primary} weight="bold" />
+            }
+            style={styles.emptyButton}
+          />
         </View>
       ) : null}
     </ScreenScaffold>
@@ -129,42 +203,107 @@ const styles = StyleSheet.create({
   scaffoldContent: {
     paddingBottom: SPACING.section,
   },
+  editHeaderButton: {
+    width: SIZES.headerIconButton,
+    height: SIZES.headerIconButton,
+    borderRadius: BORDER_RADIUS.sm,
+    backgroundColor: COLORS.card,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  editHeaderPressed: {
+    backgroundColor: COLORS.surfacePressed,
+  },
   heroCard: {
-    padding: SPACING.lg + 2,
+    paddingHorizontal: SPACING.lg,
+    paddingTop: SPACING.xl + 4,
+    paddingBottom: SPACING.lg,
+    marginBottom: SPACING.xl,
     borderRadius: BORDER_RADIUS.hero,
     backgroundColor: COLORS.primaryDark,
-    marginBottom: SPACING.lg,
+    alignItems: 'center',
     overflow: 'hidden',
+    ...heroShadow,
+  },
+  heroDecoration: {
+    position: 'absolute',
+    top: -60,
+    right: -50,
+    width: 180,
+    height: 180,
+    borderRadius: BORDER_RADIUS.round,
+    backgroundColor: COLORS.decorationOverlay,
+  },
+  heroDecorationSmall: {
+    top: undefined,
+    right: undefined,
+    bottom: -40,
+    left: -30,
+    width: 110,
+    height: 110,
   },
   heroArabic: {
-    fontSize: FONT_SIZES.hero,
-    lineHeight: 40,
+    fontSize: FONT_SIZES.stat - 4,
+    lineHeight: 60,
     fontWeight: FONT_WEIGHTS.bold,
     color: COLORS.textOnPrimary,
-    textAlign: 'right',
+    textAlign: 'center',
     writingDirection: 'rtl',
   },
+  heroDivider: {
+    width: 36,
+    height: 2,
+    marginVertical: SPACING.md - 4,
+    borderRadius: 1,
+    backgroundColor: COLORS.textOnDarkCardMuted,
+    opacity: 0.4,
+  },
   heroMeaning: {
-    marginTop: SPACING.sm,
-    fontSize: FONT_SIZES.hero,
+    fontSize: FONT_SIZES.xxxl,
+    lineHeight: 26,
     fontWeight: FONT_WEIGHTS.semibold,
     color: COLORS.textOnDarkCard,
-    lineHeight: 40,
+    textAlign: 'center',
+  },
+  heroMetaRow: {
+    marginTop: SPACING.lg,
+    gap: SPACING.xs + 2,
   },
   heroMeta: {
-    marginTop: SPACING.md,
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.xs,
     fontWeight: FONT_WEIGHTS.medium,
     color: COLORS.textOnDarkCardMuted,
+    fontVariant: ['tabular-nums'],
   },
   section: {
-    marginBottom: SPACING.lg,
+    marginBottom: SPACING.xl,
+  },
+  sectionHeader: {
+    marginBottom: SPACING.sm + 2,
+    paddingHorizontal: SPACING.xs,
+    gap: SPACING.xs + 2,
   },
   sectionTitle: {
-    marginBottom: SPACING.sm,
+    fontSize: FONT_SIZES.xs,
+    fontWeight: FONT_WEIGHTS.bold,
+    color: COLORS.textMuted,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
   },
-  imageCard: {
-    borderRadius: BORDER_RADIUS.card,
+  sectionCount: {
+    minWidth: 20,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: BORDER_RADIUS.round,
+    overflow: 'hidden',
+    backgroundColor: COLORS.surfaceMuted,
+    fontSize: FONT_SIZES.xs - 1,
+    fontWeight: FONT_WEIGHTS.bold,
+    color: COLORS.primary,
+    textAlign: 'center',
+  },
+  card: {
+    borderRadius: BORDER_RADIUS.xxl,
     borderWidth: 1,
     borderColor: COLORS.border,
     backgroundColor: COLORS.card,
@@ -176,48 +315,41 @@ const styles = StyleSheet.create({
     aspectRatio: 16 / 10,
     backgroundColor: COLORS.surfaceMuted,
   },
-  examplesCard: {
-    borderRadius: BORDER_RADIUS.xxl,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    backgroundColor: COLORS.card,
-    overflow: 'hidden',
-    ...cardShadow,
-  },
   exampleRow: {
-    flexDirection: 'row',
     alignItems: 'flex-start',
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.md,
-    gap: SPACING.md,
+    gap: SPACING.md - 4,
   },
   exampleRowBorder: {
     borderBottomWidth: 1,
     borderBottomColor: COLORS.borderLight,
   },
   exampleBadge: {
-    width: 28,
-    height: 28,
-    borderRadius: BORDER_RADIUS.sm,
+    width: SIZES.stepBadge,
+    height: SIZES.stepBadge,
+    marginTop: 2,
+    borderRadius: BORDER_RADIUS.round,
     backgroundColor: COLORS.surfaceWordIcon,
   },
   exampleBadgeText: {
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.xs,
     fontWeight: FONT_WEIGHTS.bold,
     color: COLORS.wordIconText,
+    fontVariant: ['tabular-nums'],
   },
   exampleContent: {
     flex: 1,
     minWidth: 0,
-    gap: SPACING.xs,
+    gap: SPACING.xs + 2,
   },
   exampleSentence: {
-    fontSize: FONT_SIZES.xl,
+    fontSize: FONT_SIZES.xxxl,
     fontWeight: FONT_WEIGHTS.semibold,
     color: COLORS.arabicWord,
     textAlign: 'right',
     writingDirection: 'rtl',
-    lineHeight: 24,
+    lineHeight: 32,
   },
   exampleMeaning: {
     fontSize: FONT_SIZES.md,
@@ -226,42 +358,44 @@ const styles = StyleSheet.create({
   },
   notesCard: {
     padding: SPACING.md,
-    borderRadius: BORDER_RADIUS.card,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    backgroundColor: COLORS.card,
-    ...cardShadow,
   },
   notesText: {
-    color: COLORS.textMutedSecondary,
-    lineHeight: 22,
+    fontSize: FONT_SIZES.lg,
+    color: COLORS.text,
+    lineHeight: 23,
   },
-  hintCard: {
-    padding: SPACING.md,
-    marginBottom: SPACING.lg,
-    borderRadius: BORDER_RADIUS.lg,
-    backgroundColor: COLORS.surfaceMuted,
+  emptyCard: {
+    alignItems: 'center',
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.xl,
+    borderRadius: BORDER_RADIUS.xxl,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderStyle: 'dashed',
+    borderColor: COLORS.addButtonBorder,
+    backgroundColor: COLORS.surfaceAddButton,
   },
-  hintText: {
-    textAlign: 'center',
-    color: COLORS.textMuted,
+  emptyIcon: {
+    width: 48,
+    height: 48,
+    marginBottom: SPACING.sm + 4,
+    borderRadius: BORDER_RADIUS.lg,
+    backgroundColor: COLORS.card,
   },
-  editButton: {
-    marginTop: SPACING.sm,
+  emptyTitle: {
+    fontSize: FONT_SIZES.xxl,
+    fontWeight: FONT_WEIGHTS.bold,
+    color: COLORS.text,
+    marginBottom: SPACING.xs,
   },
-  editHeaderButton: {
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs,
-    borderRadius: BORDER_RADIUS.sm,
-  },
-  editHeaderPressed: {
-    opacity: 0.7,
-  },
-  editHeaderLabel: {
+  emptyBody: {
+    maxWidth: 280,
     fontSize: FONT_SIZES.md,
-    fontWeight: FONT_WEIGHTS.semibold,
-    color: COLORS.primary,
+    lineHeight: 20,
+    color: COLORS.textMuted,
+    textAlign: 'center',
+  },
+  emptyButton: {
+    marginTop: SPACING.lg,
+    alignSelf: 'stretch',
   },
 });

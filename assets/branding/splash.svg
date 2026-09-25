@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1284 2778" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="200" y1="0" x2="1084" y2="2778" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F7F8F3"/>
+      <stop offset="0.35" stop-color="#EDF5EF"/>
+      <stop offset="1" stop-color="#E2EEE6"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="400" y1="900" x2="884" y2="1500" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#E8D5A3"/>
+      <stop offset="0.5" stop-color="#C9A84C"/>
+      <stop offset="1" stop-color="#9A7B2E"/>
+    </linearGradient>
+    <linearGradient id="leaf" x1="442" y1="1500" x2="842" y2="1100" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2F8A5E"/>
+      <stop offset="1" stop-color="#193D2E"/>
+    </linearGradient>
+    <pattern id="grid" width="72" height="72" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <path d="M0 36 H72 M36 0 V72" stroke="#28744E" stroke-width="1" opacity="0.06"/>
+    </pattern>
+  </defs>
+  <rect width="1284" height="2778" fill="url(#bg)"/>
+  <rect width="1284" height="2778" fill="url(#grid)"/>
+  <circle cx="642" cy="1180" r="280" stroke="url(#gold)" stroke-width="4" opacity="0.5"/>
+  <text
+    x="642"
+    y="1260"
+    text-anchor="middle"
+    direction="rtl"
+    font-family="'Geeza Pro', 'Noto Naskh Arabic', 'Arial Unicode MS', serif"
+    font-size="200"
+    font-weight="600"
+    fill="url(#leaf)"
+    letter-spacing="0.12em"
+  >&#1603; &#1604; &#1605;</text>
+</svg>

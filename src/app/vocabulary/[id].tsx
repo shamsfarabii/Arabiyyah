@@ -1,10 +1,19 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
+import { AppIcon } from '@/components/ui/AppIcon';
+import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { ScreenScaffold } from '@/components/ui/ScreenScaffold';
-import { COLORS, FONT_SIZES, FONT_WEIGHTS } from '@/constants/theme';
+import {
+  BORDER_RADIUS,
+  COLORS,
+  FONT_SIZES,
+  FONT_WEIGHTS,
+  ICON_SIZES,
+  SPACING,
+} from '@/constants/theme';
 import { VocabularyDetailScreen } from '@/features/vocabulary/screens/VocabularyDetailScreen';
 import { getVocabulary } from '@/features/vocabulary/services/vocabularyService';
 import type { Vocabulary } from '@/features/vocabulary/types';
@@ -54,7 +63,7 @@ export default function VocabularyDetailRoute() {
   if (isLoading) {
     return (
       <ScreenScaffold scroll={false}>
-        <ScreenHeader title="Vocabulary" onBack={() => router.back()} />
+        <ScreenHeader title="Word" onBack={() => router.back()} />
         <View style={[commonStyles.grow, commonStyles.centered]}>
           <ActivityIndicator color={COLORS.primary} />
         </View>
@@ -64,23 +73,21 @@ export default function VocabularyDetailRoute() {
 
   if (loadError || !vocabulary) {
     return (
-      <ScreenScaffold>
-        <ScreenHeader title="Vocabulary" onBack={() => router.back()} />
-        <Text style={{ fontSize: FONT_SIZES.md, color: COLORS.textMuted }}>
-          {loadError ?? 'Vocabulary not found.'}
-        </Text>
-        <Pressable onPress={() => void loadVocabulary()}>
-          <Text
-            style={{
-              marginTop: 16,
-              fontSize: FONT_SIZES.md,
-              fontWeight: FONT_WEIGHTS.semibold,
-              color: COLORS.primary,
-            }}
-          >
-            Try again
-          </Text>
-        </Pressable>
+      <ScreenScaffold scroll={false}>
+        <ScreenHeader title="Word" onBack={() => router.back()} />
+        <View style={[commonStyles.grow, commonStyles.centered, styles.errorState]}>
+          <View style={[styles.errorIcon, commonStyles.centered]}>
+            <AppIcon name="warning" size={ICON_SIZES.xxl} color={COLORS.danger} />
+          </View>
+          <Text style={styles.errorTitle}>Could not open this word</Text>
+          <Text style={styles.errorBody}>{loadError ?? 'Vocabulary not found.'}</Text>
+          <PrimaryButton
+            label="Try again"
+            variant="secondary"
+            onPress={() => void loadVocabulary()}
+            style={styles.errorButton}
+          />
+        </View>
       </ScreenScaffold>
     );
   }
@@ -93,3 +100,34 @@ export default function VocabularyDetailRoute() {
     />
   );
 }
+
+const styles = StyleSheet.create({
+  errorState: {
+    paddingHorizontal: SPACING.lg,
+    paddingBottom: SPACING.section,
+  },
+  errorIcon: {
+    width: 64,
+    height: 64,
+    marginBottom: SPACING.md,
+    borderRadius: BORDER_RADIUS.xxl,
+    backgroundColor: COLORS.surfaceDanger,
+  },
+  errorTitle: {
+    fontSize: FONT_SIZES.xxxl,
+    fontWeight: FONT_WEIGHTS.bold,
+    color: COLORS.text,
+    marginBottom: SPACING.xs + 2,
+  },
+  errorBody: {
+    maxWidth: 300,
+    fontSize: FONT_SIZES.md,
+    lineHeight: 20,
+    color: COLORS.textMuted,
+    textAlign: 'center',
+  },
+  errorButton: {
+    marginTop: SPACING.lg,
+    alignSelf: 'stretch',
+  },
+});

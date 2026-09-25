@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="128" y1="64" x2="896" y2="960" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2F8A5E"/>
+      <stop offset="0.55" stop-color="#28744E"/>
+      <stop offset="1" stop-color="#193D2E"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="160" y1="96" x2="864" y2="928" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#E8D5A3"/>
+      <stop offset="0.5" stop-color="#C9A84C"/>
+      <stop offset="1" stop-color="#9A7B2E"/>
+    </linearGradient>
+    <pattern id="arabesque" width="64" height="64" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <path d="M0 32 H64 M32 0 V64" stroke="#FFFFFF" stroke-width="1" opacity="0.07"/>
+    </pattern>
+    <radialGradient id="halo" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(512 500) rotate(90) scale(420)">
+      <stop stop-color="#FFFFFF" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1024" height="1024" rx="224" fill="url(#bg)"/>
+  <rect width="1024" height="1024" rx="224" fill="url(#arabesque)"/>
+  <ellipse cx="512" cy="500" rx="380" ry="340" fill="url(#halo)"/>
+  <circle cx="512" cy="512" r="400" stroke="url(#gold)" stroke-width="5" opacity="0.45"/>
+  <text
+    x="512"
+    y="580"
+    text-anchor="middle"
+    direction="rtl"
+    font-family="'Geeza Pro', 'Noto Naskh Arabic', 'Arial Unicode MS', serif"
+    font-size="300"
+    font-weight="600"
+    fill="#F7F8F3"
+    letter-spacing="0.1em"
+  >&#1603; &#1604; &#1605;</text>
+</svg>

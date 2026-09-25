@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <linearGradient id="gold" x1="80" y1="48" x2="432" y2="464" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#E8D5A3"/>
+      <stop offset="0.5" stop-color="#C9A84C"/>
+      <stop offset="1" stop-color="#9A7B2E"/>
+    </linearGradient>
+    <linearGradient id="leaf" x1="96" y1="448" x2="416" y2="96" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#3D9B6C"/>
+      <stop offset="1" stop-color="#193D2E"/>
+    </linearGradient>
+    <radialGradient id="halo" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(256 256) rotate(90) scale(220)">
+      <stop stop-color="#FFFFFF" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <circle cx="256" cy="256" r="200" stroke="url(#gold)" stroke-width="3" opacity="0.55"/>
+  <circle cx="256" cy="256" r="178" fill="url(#halo)"/>
+  <text
+    x="256"
+    y="292"
+    text-anchor="middle"
+    direction="rtl"
+    font-family="'Geeza Pro', 'Noto Naskh Arabic', 'Arial Unicode MS', serif"
+    font-size="148"
+    font-weight="600"
+    fill="url(#leaf)"
+    letter-spacing="0.12em"
+  >&#1603; &#1604; &#1605;</text>
+</svg>

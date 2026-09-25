@@ -15,7 +15,12 @@ import {
   ICON_SIZES,
   SPACING,
 } from '@/constants/theme';
+import {
+  GITHUB_RELEASES_PAGE_URL,
+  LATEST_APK_DOWNLOAD_URL,
+} from '@/constants/appLinks';
 import { resetUserProgress } from '@/features/settings/services/settingsService';
+import { openExternalUrl } from '@/utils/openExternalUrl';
 import { createShadow } from '@/helpers/styleHelpers';
 import { appAlert } from '@/utils/appAlert';
 import { commonStyles } from '@/styles/commonStyles';
@@ -43,6 +48,26 @@ export function SettingsScreen() {
     }
   }, []);
 
+  const openLatestApkDownload = useCallback(async () => {
+    try {
+      await openExternalUrl(LATEST_APK_DOWNLOAD_URL);
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : 'Could not open the download link.';
+      appAlert('Download unavailable', message);
+    }
+  }, []);
+
+  const openReleasesPage = useCallback(async () => {
+    try {
+      await openExternalUrl(GITHUB_RELEASES_PAGE_URL);
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : 'Could not open GitHub.';
+      appAlert('Link unavailable', message);
+    }
+  }, []);
+
   const confirmResetProgress = useCallback(() => {
     appAlert(
       'Reset all progress?',
@@ -63,6 +88,55 @@ export function SettingsScreen() {
   return (
     <ScreenScaffold>
       <ScreenHeader title="Settings" onBack={() => router.back()} />
+
+      <FormSection
+        title="Android app"
+        hint="Install or update My Arabic outside the Play Store."
+      >
+        <View style={styles.card}>
+          <View style={[commonStyles.row, styles.cardHeader]}>
+            <View style={[commonStyles.centered, styles.iconChipDownload]}>
+              <AppIcon name="importDoc" size={ICON_SIZES.md} color={COLORS.primary} />
+            </View>
+            <View style={commonStyles.grow}>
+              <Text style={styles.cardTitle}>Latest APK on GitHub</Text>
+              <Text style={styles.cardBody}>
+                Download the newest Android build from our public GitHub releases. You may need
+                to allow installs from your browser or file manager.
+              </Text>
+              <Text
+                style={styles.linkText}
+                accessibilityRole="link"
+                onPress={() => {
+                  void openLatestApkDownload();
+                }}
+              >
+                {LATEST_APK_DOWNLOAD_URL}
+              </Text>
+            </View>
+          </View>
+
+          <PrimaryButton
+            label="Download latest APK"
+            variant="secondary"
+            leading={<AppIcon name="importDoc" size={ICON_SIZES.sm} color={COLORS.primary} />}
+            onPress={() => {
+              void openLatestApkDownload();
+            }}
+            accessibilityHint="Opens the latest Android APK download on GitHub"
+          />
+
+          <PrimaryButton
+            label="All releases on GitHub"
+            variant="secondary"
+            leading={<AppIcon name="share" size={ICON_SIZES.sm} color={COLORS.primary} />}
+            onPress={() => {
+              void openReleasesPage();
+            }}
+            accessibilityHint="Opens the GitHub releases page in your browser"
+          />
+        </View>
+      </FormSection>
 
       <FormSection
         title="Learning data"
@@ -117,6 +191,21 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surfaceDanger,
     borderWidth: 1,
     borderColor: COLORS.borderDanger,
+  },
+  iconChipDownload: {
+    width: 40,
+    height: 40,
+    borderRadius: BORDER_RADIUS.md,
+    backgroundColor: COLORS.surfaceMuted,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  linkText: {
+    marginTop: SPACING.sm,
+    fontSize: FONT_SIZES.sm,
+    lineHeight: 18,
+    color: COLORS.primary,
+    textDecorationLine: 'underline',
   },
   cardTitle: {
     fontSize: FONT_SIZES.xl,

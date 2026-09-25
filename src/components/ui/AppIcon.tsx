@@ -22,7 +22,13 @@ export type AppIconName =
   | 'minus'
   | 'clock'
   | 'settings'
-  | 'home';
+  | 'home'
+  | 'search'
+  | 'xmarkCircle'
+  | 'pencil'
+  | 'quote'
+  | 'notes'
+  | 'calendar';
 
 const ICON_NAMES: Record<AppIconName, SymbolViewProps['name']> = {
   chevronLeft: {
@@ -124,6 +130,36 @@ const ICON_NAMES: Record<AppIconName, SymbolViewProps['name']> = {
     ios: 'gearshape.fill',
     android: 'settings',
     web: 'settings',
+  },
+  search: {
+    ios: 'magnifyingglass',
+    android: 'search',
+    web: 'search',
+  },
+  xmarkCircle: {
+    ios: 'xmark.circle.fill',
+    android: 'cancel',
+    web: 'cancel',
+  },
+  pencil: {
+    ios: 'pencil',
+    android: 'edit',
+    web: 'edit',
+  },
+  quote: {
+    ios: 'text.quote',
+    android: 'format_quote',
+    web: 'format_quote',
+  },
+  notes: {
+    ios: 'note.text',
+    android: 'notes',
+    web: 'notes',
+  },
+  calendar: {
+    ios: 'calendar',
+    android: 'calendar_today',
+    web: 'calendar_today',
   },
 };
 

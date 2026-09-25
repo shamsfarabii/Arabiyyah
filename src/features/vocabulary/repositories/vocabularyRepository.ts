@@ -1,4 +1,5 @@
 import { getDatabase } from '@/db/database';
+import type { AppDatabase, SqlParam } from '@/db/types';
 import { MAX_VOCABULARY_EXAMPLES } from '@/features/vocabulary/constants';
 import type {
   Vocabulary,
@@ -281,11 +282,92 @@ export async function updateVocabulary(
   return updated;
 }
 
-export async function deleteVocabulary(id: string): Promise<void> {
-  const db = await getDatabase();
-  const result = await db.runAsync('DELETE FROM vocabulary WHERE id = ?;', id);
+type VocabularyDeleteScope = { type: 'all' } | { type: 'ids'; ids: string[] };
 
-  if (result.changes === 0) {
+/**
+ * Clears quiz, review, and example rows that reference vocabulary before the
+ * parent row is removed. Review attempts must be deleted before review sessions
+ * on older schemas where session_id lacks ON DELETE CASCADE. Quiz questions are
+ * removed (not nulled) so legacy NOT NULL vocabulary_id columns still work.
+ */
+async function clearVocabularyDependencies(
+  db: AppDatabase,
+  scope: VocabularyDeleteScope,
+): Promise<void> {
+  if (scope.type === 'ids' && scope.ids.length === 0) {
+    return;
+  }
+
+  if (scope.type === 'all') {
+    await db.runAsync('DELETE FROM review_attempt;');
+    await db.runAsync('DELETE FROM review_session;');
+    await db.runAsync('DELETE FROM vocabulary_stats;');
+    await db.runAsync('DELETE FROM vocabulary_example;');
+    await db.runAsync('DELETE FROM vocabulary_review;');
+    await db.runAsync('DELETE FROM quiz_question WHERE vocabulary_id IS NOT NULL;');
+    return;
+  }
+
+  const placeholders = scope.ids.map(() => '?').join(', ');
+  const idParams: SqlParam[] = scope.ids;
+
+  await db.runAsync(
+    `DELETE FROM review_attempt WHERE vocabulary_id IN (${placeholders});`,
+    ...idParams,
+  );
+  await db.runAsync(
+    `DELETE FROM vocabulary_stats WHERE vocabulary_id IN (${placeholders});`,
+    ...idParams,
+  );
+  await db.runAsync(
+    `DELETE FROM vocabulary_example WHERE vocabulary_id IN (${placeholders});`,
+    ...idParams,
+  );
+  await db.runAsync(
+    `DELETE FROM vocabulary_review WHERE vocabulary_id IN (${placeholders});`,
+    ...idParams,
+  );
+  await db.runAsync(
+    `DELETE FROM quiz_question WHERE vocabulary_id IN (${placeholders});`,
+    ...idParams,
+  );
+}
+
+async function deleteVocabularyWithScope(scope: VocabularyDeleteScope): Promise<number> {
+  const db = await getDatabase();
+  let deletedCount = 0;
+
+  // Older on-device schemas may not match current CASCADE / SET NULL FK actions.
+  await db.execAsync('PRAGMA foreign_keys = OFF;');
+
+  try {
+    await db.withTransactionAsync(async () => {
+      await clearVocabularyDependencies(db, scope);
+
+      if (scope.type === 'all') {
+        const result = await db.runAsync('DELETE FROM vocabulary;');
+        deletedCount = result.changes;
+        return;
+      }
+
+      const placeholders = scope.ids.map(() => '?').join(', ');
+      const result = await db.runAsync(
+        `DELETE FROM vocabulary WHERE id IN (${placeholders});`,
+        ...scope.ids,
+      );
+      deletedCount = result.changes;
+    });
+  } finally {
+    await db.execAsync('PRAGMA foreign_keys = ON;');
+  }
+
+  return deletedCount;
+}
+
+export async function deleteVocabulary(id: string): Promise<void> {
+  const deletedCount = await deleteVocabularyWithScope({ type: 'ids', ids: [id] });
+
+  if (deletedCount === 0) {
     throw new Error('Vocabulary not found', { cause: { id } });
   }
 }
@@ -295,18 +377,9 @@ export async function deleteVocabularyByIds(ids: string[]): Promise<number> {
     return 0;
   }
 
-  const db = await getDatabase();
-  const placeholders = ids.map(() => '?').join(', ');
-  const result = await db.runAsync(
-    `DELETE FROM vocabulary WHERE id IN (${placeholders});`,
-    ...ids,
-  );
-
-  return result.changes;
+  return deleteVocabularyWithScope({ type: 'ids', ids });
 }
 
 export async function deleteAllVocabulary(): Promise<number> {
-  const db = await getDatabase();
-  const result = await db.runAsync('DELETE FROM vocabulary;');
-  return result.changes;
+  return deleteVocabularyWithScope({ type: 'all' });
 }
