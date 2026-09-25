@@ -113,7 +113,7 @@ Anyone can install the latest Android build from GitHub—no account required in
 
 Inside the app, open **Settings** for the same download links.
 
-Maintainers: push a version tag such as `v1.0.1`, or run the **Release APK** workflow manually, to publish a new GitHub release with the `my-arabic.apk` asset.
+Maintainers: push a version tag from **current `main`** (e.g. `v1.0.1`). The workflow file at that tag is what runs—an older tag like `v1.0.0` will not pick up workflow fixes on `main`. Alternatively, run **Release APK** manually from the `main` branch on GitHub Actions.
 
 ---
 
