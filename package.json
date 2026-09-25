@@ -2,6 +2,7 @@
   "name": "my-arabic",
   "main": "expo-router/entry",
   "version": "1.0.0",
+  "packageManager": "npm@10.9.2",
   "dependencies": {
     "@expo/ui": "~57.0.19",
     "@hookform/resolvers": "^5.9.1",
