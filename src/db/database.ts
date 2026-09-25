@@ -11,7 +11,6 @@ async function openDatabase(): Promise<SQLite.SQLiteDatabase> {
   const db = await SQLite.openDatabaseAsync(DATABASE_NAME);
   await db.execAsync('PRAGMA foreign_keys = ON;');
   await runMigrations(db);
-  await seedVocabulary(db);
   return db;
 }
 

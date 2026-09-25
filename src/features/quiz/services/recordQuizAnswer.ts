@@ -29,18 +29,6 @@ function toOutcome(question: QuizQuestionRecord): QuizAnswerOutcome {
   };
 }
 
-/**
- * Records one answer for one user.
- *
- * The caller only states which option was picked (`null` means the timer ran
- * out). Correctness is decided against the stored question, and every counter
- * is incremented by this layer — no count ever travels in from outside.
- *
- * Idempotency has two layers: an already-answered question returns its stored
- * outcome untouched, and the write itself only applies while the question is
- * still unanswered. A double tap, a retry after a failure, or a late timer
- * callback therefore cannot count a question twice.
- */
 export async function recordQuizAnswer(
   db: AppDatabase,
   userId: string,
@@ -95,8 +83,6 @@ export async function recordQuizAnswer(
 
     await incrementAttemptTotals(db, attempt.id, wasCorrect);
 
-    // A word deleted mid-quiz keeps its question playable through the stored
-    // snapshot, but there is no row left to attribute statistics to.
     if (question.vocabularyId !== null) {
       await recordVocabularyAttempt(db, {
         userId,
@@ -107,7 +93,6 @@ export async function recordQuizAnswer(
     }
   });
 
-  // Read back so the caller always sees what was persisted.
   const stored = await findQuizQuestionAt(db, attempt.id, input.position);
   if (stored) {
     return toOutcome(stored);

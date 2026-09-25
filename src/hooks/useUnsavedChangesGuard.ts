@@ -8,11 +8,6 @@ type GuardCopy = {
   discardLabel?: string;
 };
 
-/**
- * Confirms before a screen with unsaved edits is popped (header back, hardware
- * back, or swipe). Returns a bypass callback to call right before navigating
- * away on purpose, e.g. after a successful save.
- */
 export function useUnsavedChangesGuard(
   hasUnsavedChanges: boolean,
   { title, message, discardLabel = 'Discard' }: GuardCopy,

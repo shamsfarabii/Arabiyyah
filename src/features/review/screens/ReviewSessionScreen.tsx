@@ -77,7 +77,6 @@ export function ReviewSessionScreen({ sessionId }: ReviewSessionScreenProps) {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isCompleted, setIsCompleted] = useState(false);
   const [completedTotal, setCompletedTotal] = useState<number | null>(null);
-  // Answers given while this screen is open (a resumed session only counts this sitting).
   const [tally, setTally] = useState<SessionTally>({ known: 0, unknown: 0 });
 
   const { width } = useWindowDimensions();
@@ -286,7 +285,6 @@ export function ReviewSessionScreen({ sessionId }: ReviewSessionScreenProps) {
 
   return renderShell(
     <>
-      {/* Progress */}
       <View style={styles.progressBlock}>
         <View style={[commonStyles.row, commonStyles.spaceBetween, commonStyles.alignCenter]}>
           <Text style={styles.progressLabel} maxFontSizeMultiplier={MAX_FONT_SCALE}>
@@ -313,7 +311,6 @@ export function ReviewSessionScreen({ sessionId }: ReviewSessionScreenProps) {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Flashcard */}
         <Pressable
           onPress={handleReveal}
           disabled={isRevealed}
@@ -374,7 +371,6 @@ export function ReviewSessionScreen({ sessionId }: ReviewSessionScreenProps) {
           )}
         </Pressable>
 
-        {/* Supporting details */}
         {isRevealed && hasDetails ? (
           <View style={styles.details}>
             {hasImage ? (
@@ -759,7 +755,6 @@ const styles = StyleSheet.create({
     lineHeight: 40,
   },
 
-  // Details
   details: {
     marginTop: SPACING.lg,
     gap: SPACING.lg,
@@ -855,7 +850,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.sm + 2,
   },
 
-  // States
   state: {
     flexGrow: 1,
     paddingHorizontal: SPACING.md,

@@ -2,18 +2,6 @@ import { QUIZ_SELECTION_WEIGHTS } from '@/features/quiz/constants';
 import type { QuizCandidateStats, WeightedVocabulary } from '@/features/quiz/types/quiz.types';
 import { shuffle, type RandomGenerator } from '@/features/quiz/utils/random';
 
-/**
- * Difficulty weight for one vocabulary word.
- *
- * Two error signals are combined on purpose:
- *  - `wrongRate` captures "the user reliably fails this word" even when the
- *    word has only been seen a couple of times.
- *  - `wrongCount` captures accumulated struggle, capped so a single very weak
- *    word cannot permanently dominate the draw.
- *
- * Never-attempted words get a fixed bonus so new vocabulary enters the cycle
- * quickly, while the non-zero base keeps mastered words in occasional rotation.
- */
 export function calculateSelectionWeight(stats: QuizCandidateStats): number {
   const { base, wrongRateWeight, wrongCountWeight, wrongCountCap, unseenBonus } =
     QUIZ_SELECTION_WEIGHTS;
@@ -46,15 +34,9 @@ function pickWeightedIndex(weights: number[], random: RandomGenerator): number {
     }
   }
 
-  // Only reachable through floating-point drift.
   return weights.length - 1;
 }
 
-/**
- * Weighted random selection without replacement, so a word can never appear
- * twice in the same quiz. The result is shuffled afterwards because draw order
- * correlates with weight, and question order should not leak difficulty.
- */
 export function selectQuizVocabulary<T extends WeightedVocabulary>(
   candidates: readonly T[],
   questionCount: number,

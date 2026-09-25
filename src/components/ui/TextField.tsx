@@ -27,12 +27,9 @@ type TextFieldProps = TextInputProps & {
   label: string;
   errorMessage?: string;
   required?: boolean;
-  /** Short guidance shown under the input while it is valid. */
   hint?: string;
-  /** Shows a live "used / maxLength" counter next to the label. */
   showCounter?: boolean;
   containerStyle?: StyleProp<ViewStyle>;
-  /** Rendered on the label row, e.g. an optional badge. */
   labelAccessory?: ReactNode;
   ref?: Ref<TextInput>;
 };
@@ -55,7 +52,6 @@ export function TextField({
 }: TextFieldProps) {
   const [isFocused, setIsFocused] = useState(false);
   const hasError = Boolean(errorMessage);
-  // The counter only earns its space once there is something to count.
   const canCount =
     showCounter && typeof maxLength === 'number' && (value ?? '').length > 0;
 

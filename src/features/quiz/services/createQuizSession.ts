@@ -18,17 +18,6 @@ import { selectQuizVocabulary } from '@/features/quiz/utils/selectQuizVocabulary
 import { createId } from '@/utils/createId';
 import { toIsoNow } from '@/utils/dates';
 
-/**
- * Builds and persists a quiz for one user.
- *
- * The database handle is a parameter so the whole path — adaptive selection,
- * question building and persistence — can be exercised against a real SQLite
- * instance in tests without pulling in the Expo runtime.
- *
- * The requested question count is validated here, not only in the form, so a
- * value that reached the service another way still cannot exceed what the user
- * actually owns.
- */
 export async function createQuizSession(
   db: AppDatabase,
   userId: string,

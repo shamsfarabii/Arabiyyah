@@ -47,7 +47,6 @@ type VocabularyFormProps = {
   submitLabel: string;
   onSubmit: (values: VocabularyValidatedInput) => Promise<void>;
   onDelete?: () => void;
-  /** Lets the host screen warn before leaving with unsaved edits. */
   onDirtyChange?: (isDirty: boolean) => void;
 };
 
@@ -61,7 +60,6 @@ const emptyDefaults: VocabularyFormValues = {
 
 const formCardShadow = createShadow(2, COLORS.accent, 0.05, 3);
 
-/** Counts leaf validation errors so the summary banner can be specific. */
 function countFieldErrors(node: unknown): number {
   if (!node || typeof node !== 'object') {
     return 0;

@@ -27,9 +27,6 @@ function compareReviewPriority(a: ReviewSelectionCandidate, b: ReviewSelectionCa
   return aTime.localeCompare(bTime);
 }
 
-/**
- * Picks unique vocabulary ids for a daily review, without replacement.
- */
 export function selectReviewVocabulary(
   candidates: readonly ReviewSelectionCandidate[],
   cardCount: number,

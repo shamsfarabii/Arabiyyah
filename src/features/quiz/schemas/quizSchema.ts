@@ -15,11 +15,6 @@ export function maximumQuestionsMessage(availableCount: number): string {
     : `You only have ${availableCount} vocabulary words available.`;
 }
 
-/**
- * Numeric contract for a quiz size. The setup screen and the service both use
- * it, so a value that never passed through the form (a stale route param, a
- * retried request) is validated against the live vocabulary count as well.
- */
 export function createQuestionCountSchema(availableCount: number) {
   return z
     .number(QUESTION_COUNT_ERRORS.wholeNumber)
@@ -38,10 +33,6 @@ const digitsOnlySchema = z
   .min(1, QUESTION_COUNT_ERRORS.required)
   .regex(/^\d+$/, QUESTION_COUNT_ERRORS.wholeNumber);
 
-/**
- * Validates raw text from the setup screen. Rejects empty input, decimals,
- * negatives, zero, and anything above the available vocabulary count.
- */
 export function parseQuestionCount(
   rawValue: string,
   availableCount: number,
@@ -63,7 +54,6 @@ export function parseQuestionCount(
   return { ok: true, value: parsed.data };
 }
 
-/** Shape of one answer submission accepted by the quiz service. */
 export const quizAnswerSubmissionSchema = z.object({
   quizAttemptId: z.string().min(1),
   position: z.number().int().min(0),
@@ -72,7 +62,6 @@ export const quizAnswerSubmissionSchema = z.object({
 
 export type QuizAnswerSubmission = z.infer<typeof quizAnswerSubmissionSchema>;
 
-/** Stored snapshot of the options a question was rendered with. */
 export const quizOptionsSchema = z.array(
   z.object({
     id: z.string().min(1),

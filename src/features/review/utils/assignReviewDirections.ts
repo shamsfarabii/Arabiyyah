@@ -1,10 +1,6 @@
 import type { ReviewDirection } from '@/features/review/types';
 import { shuffle, type RandomGenerator } from '@/features/quiz/utils/random';
 
-/**
- * Builds a roughly balanced list of prompt directions for one session.
- * Odd counts get one extra Arabic-first card.
- */
 export function assignReviewDirections(
   cardCount: number,
   random: RandomGenerator = Math.random,

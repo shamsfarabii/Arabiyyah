@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
@@ -22,45 +22,67 @@ export default function EditVocabularyRoute() {
   const vocabularyId = typeof id === 'string' ? id : '';
 
   const [vocabulary, setVocabulary] = useState<Vocabulary | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(vocabularyId.length > 0);
+  const [loadError, setLoadError] = useState<string | null>(
+    vocabularyId.length > 0 ? null : 'Missing vocabulary id.',
+  );
+  const [attempt, setAttempt] = useState(0);
+  const [requestedLoad, setRequestedLoad] = useState({ vocabularyId, attempt: 0 });
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  if (
+    requestedLoad.vocabularyId !== vocabularyId ||
+    requestedLoad.attempt !== attempt
+  ) {
+    setRequestedLoad({ vocabularyId, attempt });
+    setVocabulary(null);
+    setIsLoading(vocabularyId.length > 0);
+    setLoadError(vocabularyId.length > 0 ? null : 'Missing vocabulary id.');
+  }
 
   const allowLeave = useUnsavedChangesGuard(hasUnsavedChanges, {
     title: 'Discard changes?',
     message: 'Your edits to this word will be lost.',
   });
 
-  const loadVocabulary = useCallback(async () => {
+  useEffect(() => {
     if (!vocabularyId) {
-      setLoadError('Missing vocabulary id.');
-      setIsLoading(false);
       return;
     }
 
-    setIsLoading(true);
-    setLoadError(null);
+    let isCurrent = true;
 
-    try {
-      const item = await getVocabulary(vocabularyId);
-      if (!item) {
-        setLoadError('Vocabulary not found.');
+    void getVocabulary(vocabularyId).then(
+      (item) => {
+        if (!isCurrent) {
+          return;
+        }
+        if (!item) {
+          setVocabulary(null);
+          setLoadError('Vocabulary not found.');
+          setIsLoading(false);
+          return;
+        }
+        setVocabulary(item);
+        setLoadError(null);
+        setIsLoading(false);
+      },
+      (error: unknown) => {
+        if (!isCurrent) {
+          return;
+        }
+        const message =
+          error instanceof Error ? error.message : 'Could not load vocabulary.';
         setVocabulary(null);
-        return;
-      }
-      setVocabulary(item);
-    } catch (error: unknown) {
-      const message =
-        error instanceof Error ? error.message : 'Could not load vocabulary.';
-      setLoadError(message);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [vocabularyId]);
+        setLoadError(message);
+        setIsLoading(false);
+      },
+    );
 
-  useEffect(() => {
-    void loadVocabulary();
-  }, [loadVocabulary]);
+    return () => {
+      isCurrent = false;
+    };
+  }, [vocabularyId, attempt]);
 
   const handleDelete = () => {
     appAlert(
@@ -106,7 +128,7 @@ export default function EditVocabularyRoute() {
           <PrimaryButton
             label="Try again"
             variant="secondary"
-            onPress={() => void loadVocabulary()}
+            onPress={() => setAttempt((currentAttempt) => currentAttempt + 1)}
             style={styles.retryButton}
           />
         </View>

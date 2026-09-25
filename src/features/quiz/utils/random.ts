@@ -1,7 +1,5 @@
-/** Injectable source of randomness so quiz logic stays deterministic in tests. */
 export type RandomGenerator = () => number;
 
-/** Fisher-Yates shuffle. Returns a new array and never mutates the input. */
 export function shuffle<T>(items: readonly T[], random: RandomGenerator = Math.random): T[] {
   const result = [...items];
 

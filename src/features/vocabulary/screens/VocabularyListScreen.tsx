@@ -247,7 +247,6 @@ export function VocabularyListScreen() {
   );
 
   const confirmDeleteAll = useCallback(() => {
-    // While a search is active, "all" means the words on screen, not the whole list.
     const isFiltered = searchQuery.trim().length > 0;
     const target = isFiltered ? items.map((item) => item.id) : 'all';
 
@@ -714,7 +713,6 @@ export function VocabularyListScreen() {
   );
 }
 
-/** Summarises the optional study material attached to a word, e.g. "2 examples · Notes". */
 function describeVocabularyDetails(item: Vocabulary): string {
   const parts: string[] = [];
   const exampleCount = item.examples.length;

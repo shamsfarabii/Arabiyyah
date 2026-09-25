@@ -89,11 +89,6 @@ function mapQuestionRow(row: QuestionRow): QuizQuestionRecord {
   };
 }
 
-/**
- * Every word the user can be quizzed on, joined with that user's statistics.
- * Words the user has never attempted come back with zeroed stats rather than
- * being filtered out, which is what gives new vocabulary its exposure bonus.
- */
 export async function findQuizCandidates(
   db: AppDatabase,
   userId: string,
@@ -169,7 +164,6 @@ export async function insertQuizSession(
   });
 }
 
-/** Scoped by user id so one user can never read or mutate another's attempt. */
 export async function findQuizAttempt(
   db: AppDatabase,
   attemptId: string,
@@ -214,11 +208,6 @@ export async function findQuizQuestions(
   return rows.map(mapQuestionRow);
 }
 
-/**
- * Writes the answer only while the question is still unanswered and reports
- * whether it actually changed a row. A retry, a double tap, or a late timer
- * callback therefore updates nothing and the caller skips every counter.
- */
 export async function markQuizQuestionAnswered(
   db: AppDatabase,
   input: {
@@ -266,10 +255,6 @@ export async function incrementAttemptTotals(
   );
 }
 
-/**
- * Counters are only ever incremented by one here; the client never supplies a
- * count. A timed-out answer is recorded exactly like a wrong one.
- */
 export async function recordVocabularyAttempt(
   db: AppDatabase,
   input: {

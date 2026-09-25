@@ -20,7 +20,6 @@ export function registerAppAlertHandler(next: AppAlertListener | null): void {
   listener = next;
 }
 
-/** Drop-in replacement for `Alert.alert` with app-themed dialogs. */
 export function appAlert(
   title: string,
   message?: string,

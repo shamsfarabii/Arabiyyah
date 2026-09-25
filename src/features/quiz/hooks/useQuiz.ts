@@ -123,12 +123,6 @@ export type UseQuizValue = {
   retryStart: () => void;
 };
 
-/**
- * Owns the transient quiz state: which question is showing, what the countdown
- * says, and what was revealed. Nothing here is persisted; every durable write
- * goes through the quiz service, which is also the only place a score is
- * calculated.
- */
 export function useQuiz(questionCount: number): UseQuizValue {
   const [state, dispatch] = useReducer(quizReducer, initialState);
 
@@ -173,11 +167,6 @@ export function useQuiz(questionCount: number): UseQuizValue {
   const currentQuestion = questions[state.currentQuestionIndex] ?? null;
   const attemptId = state.session?.attempt.id ?? null;
 
-  /**
-   * The refs are the first line of defence against counting a question twice:
-   * they are updated synchronously, so a second tap or an expiring timer in the
-   * same render cycle is dropped before it ever reaches the database.
-   */
   const submitAnswer = useCallback(
     async (position: number, selectedOptionId: string | null) => {
       if (!attemptId || isSubmittingRef.current || answeredPositionsRef.current.has(position)) {
@@ -238,8 +227,6 @@ export function useQuiz(questionCount: number): UseQuizValue {
     [currentQuestion, submitAnswer],
   );
 
-  // A failed save keeps the submission so it can be retried; the database
-  // guard makes a retry safe even if the first write actually landed.
   const pendingSubmission = state.pendingSubmission;
 
   const retrySubmit = useCallback(() => {

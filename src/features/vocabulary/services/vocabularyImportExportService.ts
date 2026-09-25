@@ -139,10 +139,7 @@ async function readPickedFileAsText(uri: string): Promise<string> {
 
 export async function pickAndParseVocabularyImportFile(): Promise<VocabularyExportFile | null> {
   const picked = await DocumentPicker.getDocumentAsync({
-    // Android file managers often report .json files as octet-stream or text/plain.
     type: ['application/json', 'text/plain', 'application/octet-stream'],
-    // On Android, read the picker's content:// URI directly: the picker grants read access to it,
-    // whereas reading the cached copy fails with "Missing 'READ' permission" / java.io errors.
     copyToCacheDirectory: Platform.OS !== 'android',
     multiple: false,
   });

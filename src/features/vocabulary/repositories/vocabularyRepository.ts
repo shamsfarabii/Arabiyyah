@@ -284,12 +284,6 @@ export async function updateVocabulary(
 
 type VocabularyDeleteScope = { type: 'all' } | { type: 'ids'; ids: string[] };
 
-/**
- * Clears quiz, review, and example rows that reference vocabulary before the
- * parent row is removed. Review attempts must be deleted before review sessions
- * on older schemas where session_id lacks ON DELETE CASCADE. Quiz questions are
- * removed (not nulled) so legacy NOT NULL vocabulary_id columns still work.
- */
 async function clearVocabularyDependencies(
   db: AppDatabase,
   scope: VocabularyDeleteScope,
@@ -337,7 +331,6 @@ async function deleteVocabularyWithScope(scope: VocabularyDeleteScope): Promise<
   const db = await getDatabase();
   let deletedCount = 0;
 
-  // Older on-device schemas may not match current CASCADE / SET NULL FK actions.
   await db.execAsync('PRAGMA foreign_keys = OFF;');
 
   try {

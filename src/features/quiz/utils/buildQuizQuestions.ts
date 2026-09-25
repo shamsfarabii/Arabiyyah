@@ -14,14 +14,6 @@ function toOption(candidate: QuizVocabularyCandidate): QuizOption {
   return { id: candidate.vocabularyId, label: candidate.meaning.trim() };
 }
 
-/**
- * Turns selected vocabulary into multiple-choice questions.
- *
- * Distractors are other words from the same collection, de-duplicated by
- * meaning so a question can never show two labels that are both correct.
- * When the collection is small the question simply shows fewer options rather
- * than failing.
- */
 export function buildQuizQuestions(
   selected: readonly QuizVocabularyCandidate[],
   pool: readonly QuizVocabularyCandidate[],
@@ -59,7 +51,6 @@ export function buildQuizQuestions(
   });
 }
 
-/** True when the collection can produce a question with at least one distractor. */
 export function hasEnoughVocabularyForQuiz(availableCount: number): boolean {
   return availableCount >= MIN_QUIZ_OPTION_COUNT;
 }

@@ -29,7 +29,6 @@ export const vocabularySchema = z.object({
     )
     .superRefine((entries, ctx) => {
       entries.forEach((entry, index) => {
-        // A meaning without its sentence would be dropped silently below.
         if (entry.sentence.trim().length === 0 && entry.meaning.trim().length > 0) {
           ctx.addIssue({
             code: 'custom',

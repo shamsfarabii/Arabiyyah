@@ -52,10 +52,6 @@ function mapAttemptRow(row: AttemptRow): ReviewAttempt {
   };
 }
 
-/**
- * Legacy spaced-repetition row kept for existing installs. Daily review history
- * lives in `review_attempt`; eligibility is derived from that table.
- */
 export async function insertInitialReviewState(
   vocabularyId: string,
   nextReviewAt: string,

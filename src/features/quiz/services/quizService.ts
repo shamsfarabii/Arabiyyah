@@ -23,7 +23,6 @@ import { countQuizEligibleVocabulary } from '@/features/review/repositories/revi
 import { countVocabulary } from '@/features/vocabulary/repositories/vocabularyRepository';
 import { toIsoNow } from '@/utils/dates';
 
-/** Every quiz write runs in this single lane; see `createSerialQueue`. */
 const enqueueQuizWrite = createSerialQueue();
 
 async function getQuizDatabase(): Promise<AppDatabase> {
@@ -31,10 +30,8 @@ async function getQuizDatabase(): Promise<AppDatabase> {
 }
 
 export type QuizSetupInfo = {
-  /** Vocabulary with at least one completed review attempt. */
   availableCount: number;
   canStart: boolean;
-  /** All saved vocabulary, including words not yet reviewed. */
   totalVocabulary: number;
 };
 
@@ -86,7 +83,6 @@ export async function completeQuiz(attemptId: string): Promise<QuizResult> {
   return getQuizResult(attemptId);
 }
 
-/** The score shown to the user is read back from the database, not tallied in the UI. */
 export async function getQuizResult(attemptId: string): Promise<QuizResult> {
   const db = await getQuizDatabase();
   const userId = await getCurrentUserId();

@@ -30,8 +30,6 @@ const NAV_ITEMS: NavItem[] = [
   { key: 'settings', label: 'Settings', icon: 'settings', href: '/settings' },
 ];
 
-// Screens where leaving through the nav would abandon work in progress.
-// Their own header (with its exit confirmation) is the way out.
 const HIDDEN_ON_PATHS = ['/quiz/session', '/review/session'];
 
 const NAV_MAX_WIDTH = 560;
@@ -49,7 +47,6 @@ function useKeyboardVisible() {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    // iOS fires the "will" events early enough to hide the bar before the keyboard animates in.
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
     const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
 
@@ -78,7 +75,6 @@ export function BottomNav() {
 
   const handleNavigate = (item: NavItem) => {
     if (item.key === currentSection) {
-      // Already in this section; only jump back if we're on a nested screen.
       if (pathname !== item.href) {
         router.replace(item.href);
       }
@@ -86,18 +82,15 @@ export function BottomNav() {
     }
 
     if (item.key === 'home') {
-      // Pop back to the existing Home screen instead of stacking a new one.
       router.dismissTo('/');
       return;
     }
 
     if (currentSection === 'home') {
-      // Keep Home underneath so the back gesture returns to it.
       router.push(item.href);
       return;
     }
 
-    // Switching between sections swaps the screen rather than growing history.
     router.replace(item.href);
   };
 

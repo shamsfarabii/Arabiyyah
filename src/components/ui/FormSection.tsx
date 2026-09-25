@@ -12,7 +12,6 @@ import { commonStyles } from '@/styles/commonStyles';
 
 type FormSectionProps = {
   title: string;
-  /** Small pill on the right of the title, e.g. "Required" or "1 of 3". */
   badge?: string;
   badgeTone?: 'neutral' | 'required';
   hint?: string;

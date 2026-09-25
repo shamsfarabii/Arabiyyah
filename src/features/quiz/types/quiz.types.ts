@@ -4,7 +4,6 @@ export type QuizCandidateStats = {
   totalAttempts: number;
 };
 
-/** Anything that can be weighted by the adaptive selector. */
 export type WeightedVocabulary = {
   vocabularyId: string;
   stats: QuizCandidateStats;
@@ -15,10 +14,6 @@ export type QuizVocabularyCandidate = WeightedVocabulary & {
   meaning: string;
 };
 
-/**
- * One answer choice. The id is the vocabulary id the label belongs to, which is
- * what lets the data layer decide correctness without trusting the client.
- */
 export type QuizOption = {
   id: string;
   label: string;
@@ -36,7 +31,6 @@ export type QuizQuestion = QuizQuestionDraft & {
   id: string;
 };
 
-/** A question row as stored, including the answer once it has been given. */
 export type QuizQuestionRecord = {
   id: string;
   position: number;

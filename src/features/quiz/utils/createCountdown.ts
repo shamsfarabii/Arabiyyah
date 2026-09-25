@@ -23,15 +23,6 @@ const defaultScheduler: CountdownScheduler = {
   clearInterval: (handle) => clearInterval(handle as ReturnType<typeof setInterval>),
 };
 
-/**
- * Deadline-based countdown.
- *
- * Remaining time is derived from a wall-clock deadline rather than by
- * decrementing a counter, so a stalled JS thread cannot silently give the user
- * extra time. `onExpire` fires at most once, and `stop()` is idempotent and
- * prevents any callback that was already queued from firing afterwards, which
- * is what keeps a late timer from submitting an answered question twice.
- */
 export function createCountdown({
   durationSeconds,
   onTick,

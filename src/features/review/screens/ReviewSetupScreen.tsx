@@ -300,7 +300,6 @@ export function ReviewSetupScreen() {
           keyboardDismissMode="on-drag"
           showsVerticalScrollIndicator={false}
         >
-          {/* Overview */}
           <View style={styles.heroCard}>
             <Text style={styles.heroDecoration} maxFontSizeMultiplier={1} aria-hidden>
               مراجعة
@@ -662,7 +661,6 @@ const styles = StyleSheet.create({
     color: COLORS.textOnDarkCardMuted,
   },
 
-  // Count picker
   card: {
     padding: SPACING.lg,
     borderRadius: BORDER_RADIUS.card,
@@ -758,7 +756,6 @@ const styles = StyleSheet.create({
     color: COLORS.textOnPrimary,
   },
 
-  // How it works
   sectionTitle: {
     fontSize: FONT_SIZES.xxl,
     fontWeight: FONT_WEIGHTS.bold,
@@ -808,7 +805,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.xs,
   },
 
-  // Footer
   footer: {
     paddingTop: SPACING.md,
     borderTopWidth: StyleSheet.hairlineWidth,
@@ -820,7 +816,6 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.sm + 2,
   },
 
-  // States
   state: {
     paddingHorizontal: SPACING.lg,
   },

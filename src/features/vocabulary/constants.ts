@@ -1,6 +1,4 @@
 export const MAX_VOCABULARY_EXAMPLES = 3;
-
-/** Input limits used by the vocabulary form to keep cards readable. */
 export const MAX_VOCABULARY_WORD_LENGTH = 80;
 export const MAX_VOCABULARY_MEANING_LENGTH = 160;
 export const MAX_VOCABULARY_EXAMPLE_LENGTH = 300;

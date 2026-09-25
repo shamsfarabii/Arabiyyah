@@ -1,9 +1,5 @@
 import type { AppDatabase } from '@/db/types';
 
-/**
- * Clears quiz stats, review history, and legacy review levels. Vocabulary rows
- * and examples are intentionally left intact.
- */
 export async function resetAllLearningProgress(
   db: AppDatabase,
   userId: string,
